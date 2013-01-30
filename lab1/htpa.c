@@ -1,4 +1,6 @@
-#define DEBUG 0
+#define DEBUG 1
+
+#include <stdio.h>
 #include "htpa.h"
 
 int main(int argc, char const *argv[])
