@@ -1,5 +1,5 @@
 #define DEBUG 1
-#define DEBUG_LEVEL 3
+#define DEBUG_LEVEL 4
 
 #include <limits.h>
 #include <stdio.h>
@@ -14,59 +14,76 @@ int main(int argc, char const *argv[]) {
   debug_print(3, "HTPA Key Length: %i\n", KEY_LEN);
   debug_print(3, "HTPA Round Key Length: %i\n", ROUND_KEY_LEN);
 
-  char string[] = "AAA";
-  // char string[] = {0x41, 0x41, 0x41, 0x41};
+  char key_str[] = "AAAAAAAAA";
+  htpa_bytes key;
+  key.bytes = (unsigned char *) key_str;
+  key.len = strlen(key_str);
+
+  printf("Key "); fprint_bytes_hex(stdout, &key);
+  printf("Key "); fprint_bytes_str(stdout, &key);
+
+  char plaintext_str[] = "Hello and goodbye, my friend.";
+  // char plaintext_str[] = "AAA";
+  // char plaintext_str[] = {0x41, 0x41, 0x41, 0x41};
   htpa_bytes plaintext;
 
-  plaintext.bytes = (unsigned char *) string;
-  plaintext.len = strlen(string);
+  plaintext.bytes = (unsigned char *) plaintext_str;
+  plaintext.len = strlen(plaintext_str);
 
-  char * plaintext_hex = get_bytes_hex(&plaintext);
-  char * plaintext_str = get_bytes_str(&plaintext);
+  printf("Plaintext "); fprint_bytes_hex(stdout, &plaintext);
+  printf("Plaintext "); fprint_bytes_str(stdout, &plaintext);
 
-  printf("Plaintext ( HEX ): \"%s\" (%i bits)\n", plaintext_hex, calc_bits(&plaintext));
-  printf("Plaintext (ASCII): \"%s\" (%i bits)\n", plaintext_str, calc_bits(&plaintext));
-  // char **blocks_array = split_into_blocks(plaintext);
+  htpa_block **blocks_array = split_into_blocks(&plaintext);
+  free_blocks_array(blocks_array);
 
-
-  free(plaintext_hex);
-  plaintext_hex = NULL;
-  free(plaintext_str);
-  plaintext_str = NULL;
   exit(EXIT_SUCCESS);
 }
 
-char * get_bytes_hex(htpa_bytes * bytes) {
-  int strsize = bytes->len * 3 - 1 + 1;
+void fprint_bytes_hex(FILE *stream, htpa_bytes * bytes_ptr) {
+  char * bytes_hex_str = get_bytes_hex(bytes_ptr);
+  fprintf(stream, "( HEX ): \"%s\" (%i bits)\n", bytes_hex_str, calc_bits(bytes_ptr));
+  free(bytes_hex_str);
+  bytes_hex_str = NULL;
+}
+
+void fprint_bytes_str(FILE *stream, htpa_bytes * bytes_ptr) {
+  char * bytes_str = get_bytes_str(bytes_ptr);
+  fprintf(stream, "(ASCII): \"%s\" (%i bits)\n", bytes_str, calc_bits(bytes_ptr));
+  free(bytes_str);
+  bytes_str = NULL;
+}
+
+char * get_bytes_hex(htpa_bytes * bytes_ptr) {
+  int strsize = bytes_ptr->len * 3 - 1 + 1;
   char * str = (char *) malloc(strsize); // -1 for missing space and +1 for str nullbyte
   for (int i = 0; i < strsize; ++i) { str[i] = '\0'; } // initialize string space of null
 
-  for (int i = 0; i < bytes->len; ++i) {
+  for (int i = 0; i < bytes_ptr->len; ++i) {
     if (i > 0) sprintf(str, "%s ", str);
-    sprintf(str, "%s%02X", str, bytes->bytes[i]);
+    sprintf(str, "%s%02X", str, bytes_ptr->bytes[i]);
   }
 
   return str;
 }
-char * get_bytes_str(htpa_bytes * bytes) {
-  int strsize = bytes->len + 1;
+char * get_bytes_str(htpa_bytes * bytes_ptr) {
+  int strsize = bytes_ptr->len + 1;
   char * str = (char *) malloc(strsize); // -1 for missing space and +1 for str nullbyte
   for (int i = 0; i < strsize; ++i) { str[i] = '\0'; } // initialize string space of null
 
-  for (int i = 0; i < bytes->len; ++i) {
-    sprintf(str, "%s%c", str, (char) bytes->bytes[i]);
+  for (int i = 0; i < bytes_ptr->len; ++i) {
+    sprintf(str, "%s%c", str, (char) bytes_ptr->bytes[i]);
   }
 
   return str;
 }
 
-int calc_bits(htpa_bytes * bytes) {
-  return bytes->len * CHAR_BIT;
+int calc_bits(htpa_bytes * bytes_ptr) {
+  return bytes_ptr->len * CHAR_BIT;
 }
 
-int calc_blocks_for_plaintext(char *str) {
+int calc_blocks_for_bytes(htpa_bytes * bytes_ptr) {
   int blocks = 0;
-  for (int i = 0; i < strlen(str); ++i) {
+  for (int i = 0; i < bytes_ptr->len; ++i) {
     if ((i * CHAR_BIT) % BLOCK_LEN == 0) {
       blocks++;
     }
@@ -75,38 +92,38 @@ int calc_blocks_for_plaintext(char *str) {
   return blocks;
 }
 
-// char** split_into_blocks(char *str) {
-//   int block_num = 0;
-//   int orig_str_len = strlen(str);
-//   char block_str[(BLOCK_LEN / CHAR_BIT) + 1]; // add one more for the null-byte
+htpa_block ** split_into_blocks(htpa_bytes * bytes_ptr) {
+  int blocks_total_num = calc_blocks_for_bytes(bytes_ptr);
+  int block_num = 0;
+  htpa_bytes * bytes_ptr_index = bytes_ptr; // so we can traverse original byte stream without breaking original pointer
 
-//   // making space for the array of strings
-//   char **blocks_array = (char **) malloc(calc_blocks_for_plaintext(str) * sizeof(char *));
+  // making space for the array of pointers
+  htpa_block **blocks_ptr_array;
+  blocks_ptr_array = (htpa_block **) malloc(sizeof(htpa_block *) * blocks_total_num);
 
-//   for (int i = 0; i < orig_str_len; ++i) {
-//     if ((i * CHAR_BIT) % BLOCK_LEN == 0) {
-//       ++block_num;
+  // making space for each individual pointer
+  for(int i = 0; i < blocks_total_num; i++) {
+     blocks_ptr_array[i] = (htpa_block *) malloc(sizeof(htpa_block));
+     blocks_ptr_array[i]->data = (htpa_bytes *) malloc(sizeof(htpa_bytes)); // make space for a byte pointer
+     blocks_ptr_array[i]->data->len = (BLOCK_LEN / CHAR_BIT);
+  }
 
-//       if (calc_bits(str) < BLOCK_LEN) {
-//         debug_print(1, "Block %i: Padding final block \"%s\" (%i bits)\n", block_num, str, calc_bits(str));
-//         strncpy(block_str, pad_block(str), (BLOCK_LEN / CHAR_BIT));
-//       } else {
-//         strncpy(block_str, str, (BLOCK_LEN / CHAR_BIT));
-//         // block_str[(BLOCK_LEN / CHAR_BIT)] = '\0'; // add the nullbyte
-//       }
-//       debug_print(1, "Block %i: \"%s\" (%i bits)\n", block_num, block_str, calc_bits(block_str));
+  // iterate through the bytes_ptr's data and break it into blocks
+  for (int i = 0; i < bytes_ptr->len; ++i) {
+    if ((i * CHAR_BIT) % BLOCK_LEN == 0) {
+      // blocks_ptr_array[i]->number = ++block_num;
 
-//       str = str + (BLOCK_LEN / CHAR_BIT);
-//       debug_print(2, "Block %i: Moved string pointer to \"%s\"\n", block_num, str);
+      // memcpy(blocks_ptr_array[i]->data->bytes, bytes_ptr_index, (BLOCK_LEN / CHAR_BIT));
+      debug_print(2, "Block %i of %i: \n", block_num, blocks_total_num);
+    }
+  }
 
-//       blocks_array[block_num] = (char *) malloc(strlen(block_str));
-//       debug_print(2, "Block %i: Copied \"%s\" to blocks array\n", block_num, block_str);
+  return blocks_ptr_array;
+}
 
-//     }
-//   }
-
-//   return blocks_array;
-// }
+void free_blocks_array(htpa_block ** array_ptr) {
+  // TODO
+}
 
 // char* pad_block(char *str) {
 //   char * padded_str = (char *) malloc((BLOCK_LEN / CHAR_BIT) + 1); // allow space for null-byte???
