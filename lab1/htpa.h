@@ -1,17 +1,19 @@
 #ifndef HTPA_H
 #define HTPA_H
 
-#ifndef BLOCK_LEN
 #define BLOCK_LEN 128
-#endif
-
-#ifndef KEY_LEN
 #define KEY_LEN 72
+#define ROUND_KEY_LEN 64
+
+#ifndef DEBUG_LEVEL
+#define DEBUG_LEVEL 1
 #endif
 
-#define debug_print(fmt, ...) \
-        do { if (DEBUG) fprintf(stderr, "%s:%d:%s(): [DEBUG] " fmt, __FILE__, \
-                                __LINE__, __func__, __VA_ARGS__); } while (0)
+#define debug_print(level, fmt, ...) \
+        do { if (DEBUG && level <= DEBUG_LEVEL) fprintf(stderr, "%s:%d:%s(): [DEBUG %i] " fmt, __FILE__, \
+                                __LINE__, __func__, level, __VA_ARGS__); fflush(stderr); } while (0)
+
+
 
 
 #endif /* HTPA_H */
