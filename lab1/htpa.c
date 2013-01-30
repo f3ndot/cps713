@@ -1,5 +1,5 @@
 #define DEBUG 1
-#define DEBUG_LEVEL 2
+#define DEBUG_LEVEL 1
 
 #include <limits.h>
 #include <stdio.h>
@@ -13,14 +13,29 @@ int main(int argc, char const *argv[]) {
   debug_print(3, "HTPA Key Length: %i\n", KEY_LEN);
   debug_print(3, "HTPA Round Key Length: %i\n", ROUND_KEY_LEN);
 
-  char plaintext[] = "Hello and Goodbye";
-  debug_print(1, "Plaintext: \"%s\" (%i bits)\n", plaintext, calc_bits(plaintext));
+  char plaintext[] = "Hello and goodbye, my friend.";
+  printf("Plaintext: \"%s\" (%i bits)\n", plaintext, calc_bits(plaintext));
+  print_bytes_str(plaintext, strlen(plaintext) + 1);
 
   char **blocks_array = split_into_blocks(plaintext);
 
   // int blocks_len = calc_blocks_for_plaintext(plaintext);
 
   return 0;
+}
+
+void print_bytes_hex(char *bytes, int len) {
+  for (int i = 0; i < len; ++i) {
+    if (i > 0) printf(" ");
+    printf("%02X", bytes[i]);
+  }
+  printf("\n");
+}
+void print_bytes_str(char *bytes, int len) {
+  for (int i = 0; i < len; ++i) {
+    printf("%c", bytes[i]);
+  }
+  printf("\n");
 }
 
 int calc_bits(char *str) {
@@ -34,7 +49,7 @@ int calc_blocks_for_plaintext(char *str) {
       blocks++;
     }
   }
-  debug_print(1, "Number of Blocks: %i (%i bits)\n", blocks, blocks * BLOCK_LEN);
+  debug_print(1, "Number of blocks: %i (%i bits)\n", blocks, blocks * BLOCK_LEN);
   return blocks;
 }
 
@@ -52,11 +67,11 @@ char** split_into_blocks(char *str) {
 
       if (calc_bits(str) < BLOCK_LEN) {
         debug_print(1, "Block %i: Padding final block \"%s\" (%i bits)\n", block_num, str, calc_bits(str));
-        str = pad_block(str);
+        strncpy(block_str, pad_block(str), (BLOCK_LEN / CHAR_BIT));
+      } else {
+        strncpy(block_str, str, (BLOCK_LEN / CHAR_BIT));
+        // block_str[(BLOCK_LEN / CHAR_BIT)] = '\0'; // add the nullbyte
       }
-
-      strncpy(block_str, str, (BLOCK_LEN / CHAR_BIT));
-      block_str[(BLOCK_LEN / CHAR_BIT)] = '\0'; // add the nullbyte
       debug_print(1, "Block %i: \"%s\" (%i bits)\n", block_num, block_str, calc_bits(block_str));
 
       str = str + (BLOCK_LEN / CHAR_BIT);
@@ -86,5 +101,6 @@ char* pad_block(char *str) {
     }
   }
 
+  // TODO: ask Geordie on how to deal with returning of local vars
   return padded_str;
 }

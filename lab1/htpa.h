@@ -10,6 +10,9 @@
 #define DEBUG_LEVEL 1
 #endif
 
+void print_bytes_hex(char *bytes, int len); // prints bytes in hex
+void print_bytes_str(char *bytes, int len);
+
 int calc_bits(char *str); // Returns number of bits of a string
 int calc_blocks_for_plaintext(char *str); // Returns number of blocks
 
