@@ -33,6 +33,7 @@ int main(int argc, char const *argv[]) {
   printf("Plaintext "); fprint_bytes_hex(stdout, &plaintext);
   printf("Plaintext "); fprint_bytes_str(stdout, &plaintext);
 
+  debug_print(1, "Splitting plaintext into blocks%s", "\n");
   htpa_block **blocks_array = split_into_blocks(&plaintext);
   free_blocks_array(blocks_array);
 
@@ -99,18 +100,19 @@ htpa_block ** split_into_blocks(htpa_bytes * bytes_ptr) {
 
   // making space for the array of pointers
   htpa_block **blocks_ptr_array;
-  blocks_ptr_array = (htpa_block **) malloc(sizeof(htpa_block *) * blocks_total_num);
+  // blocks_ptr_array = (htpa_block **) malloc(sizeof(htpa_block *) * blocks_total_num);
 
   // making space for each individual pointer
-  for(int i = 0; i < blocks_total_num; i++) {
-     blocks_ptr_array[i] = (htpa_block *) malloc(sizeof(htpa_block));
-     blocks_ptr_array[i]->data = (htpa_bytes *) malloc(sizeof(htpa_bytes)); // make space for a byte pointer
-     blocks_ptr_array[i]->data->len = (BLOCK_LEN / CHAR_BIT);
-  }
+  // for(int i = 0; i < blocks_total_num; i++) {
+  //    blocks_ptr_array[i] = (htpa_block *) malloc(sizeof(htpa_block));
+  //    blocks_ptr_array[i]->data = (htpa_bytes *) malloc(sizeof(htpa_bytes)); // make space for a byte pointer
+  //    blocks_ptr_array[i]->data->len = (BLOCK_LEN / CHAR_BIT);
+  // }
 
   // iterate through the bytes_ptr's data and break it into blocks
   for (int i = 0; i < bytes_ptr->len; ++i) {
     if ((i * CHAR_BIT) % BLOCK_LEN == 0) {
+      ++block_num;
       // blocks_ptr_array[i]->number = ++block_num;
 
       // memcpy(blocks_ptr_array[i]->data->bytes, bytes_ptr_index, (BLOCK_LEN / CHAR_BIT));
