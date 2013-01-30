@@ -27,12 +27,12 @@ void fprint_bytes_str(FILE *stream, htpa_bytes *);
 char * get_bytes_hex(htpa_bytes *); // string of bytes represented hex, takes pointer to htpa_bytes struct
 char * get_bytes_str(htpa_bytes *); // string of bytes represented ASCII, takes pointer to htpa_bytes struct
 
-int calc_bits(htpa_bytes *); // Returns number of bits of a string
-int calc_blocks_for_bytes(htpa_bytes *); // Returns number of blocks needed
+int calc_bits(htpa_bytes *); // Returns number of bits of byte array
+int calc_blocks_for_bytes(htpa_bytes *); // Returns number of blocks needed in a byte array
 
-htpa_block ** split_into_blocks(htpa_bytes *); // breaks a string of any size into blocks (array of htpa_block)
-// char* pad_block(char *str); // formats block into a padded BLOCK_LEN bit size
-void free_blocks_array(htpa_block **);
+htpa_block ** split_into_blocks(htpa_bytes *); // breaks a byte array of any size into blocks (array of htpa_block)
+// TODO // char* pad_block(char *str); // formats block into a padded BLOCK_LEN bit size
+void free_blocks_array(htpa_block **); // Frees up memory of the blocks' byte arrays, the blocks themselves, and their array
 
 
 #define debug_print(level, fmt, ...) \
