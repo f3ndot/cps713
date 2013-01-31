@@ -10,17 +10,18 @@
 
 int main(int argc, char const *argv[]) {
 
-  debug_print(3, "HTPA Block Length: %i\n", BLOCK_LEN);
-  debug_print(3, "HTPA Key Length: %i\n", KEY_LEN);
-  debug_print(3, "HTPA Round Key Length: %i\n", ROUND_KEY_LEN);
+  debug_print(3, "HTPA Block Length:     %i bytes (%i bits)\n", BLOCK_BYTE_LEN, BLOCK_LEN);
+  debug_print(3, "HTPA Key Length:       %i bytes (%i bits)\n", KEY_BYTE_LEN, KEY_LEN);
+  debug_print(3, "HTPA Round Key Length: %i bytes (%i bits)\n", ROUND_BYTE_KEY_LEN, ROUND_KEY_LEN);
 
   char key_str[] = "AAAAAAAAA";
   htpa_bytes key;
   key.bytes = (unsigned char *) key_str;
   key.len = strlen(key_str);
+  htpa_bytes *key_ptr = &key;
 
-  printf("Key "); fprint_bytes_hex(stdout, &key);
-  printf("Key "); fprint_bytes_str(stdout, &key);
+  printf("Key "); fprint_bytes_hex(stdout, key_ptr);
+  printf("Key "); fprint_bytes_str(stdout, key_ptr);
 
   char plaintext_str[] = "Hello and goodbye, my friend.";
   // char plaintext_str[] = "AAA";
@@ -29,27 +30,27 @@ int main(int argc, char const *argv[]) {
 
   plaintext.bytes = (unsigned char *) plaintext_str;
   plaintext.len = strlen(plaintext_str);
+  htpa_bytes *plaintext_ptr = &plaintext;
 
-  printf("Plaintext "); fprint_bytes_hex(stdout, &plaintext);
-  printf("Plaintext "); fprint_bytes_str(stdout, &plaintext);
+  printf("Plaintext "); fprint_bytes_hex(stdout, plaintext_ptr);
+  printf("Plaintext "); fprint_bytes_str(stdout, plaintext_ptr);
 
   debug_print(1, "Splitting plaintext into blocks%s", "\n");
-  htpa_block **blocks_array = split_into_blocks(&plaintext);
-  free_blocks_array(blocks_array);
+  split_into_blocks(plaintext_ptr);
 
   exit(EXIT_SUCCESS);
 }
 
 void fprint_bytes_hex(FILE *stream, htpa_bytes * bytes_ptr) {
   char * bytes_hex_str = get_bytes_hex(bytes_ptr);
-  fprintf(stream, "( HEX ): \"%s\" (%i bits)\n", bytes_hex_str, calc_bits(bytes_ptr));
+  fprintf(stream, "( HEX ): \"%s\" (%i bytes, %i bits)\n", bytes_hex_str, bytes_ptr->len, calc_bits(bytes_ptr));
   free(bytes_hex_str);
   bytes_hex_str = NULL;
 }
 
 void fprint_bytes_str(FILE *stream, htpa_bytes * bytes_ptr) {
   char * bytes_str = get_bytes_str(bytes_ptr);
-  fprintf(stream, "(ASCII): \"%s\" (%i bits)\n", bytes_str, calc_bits(bytes_ptr));
+  fprintf(stream, "(ASCII): \"%s\" (%i bytes, %i bits)\n", bytes_str, bytes_ptr->len, calc_bits(bytes_ptr));
   free(bytes_str);
   bytes_str = NULL;
 }
@@ -68,7 +69,7 @@ char * get_bytes_hex(htpa_bytes * bytes_ptr) {
 }
 char * get_bytes_str(htpa_bytes * bytes_ptr) {
   int strsize = bytes_ptr->len + 1;
-  char * str = (char *) malloc(strsize); // -1 for missing space and +1 for str nullbyte
+  char * str = (char *) malloc(strsize);
   for (int i = 0; i < strsize; ++i) { str[i] = '\0'; } // initialize string space of null
 
   for (int i = 0; i < bytes_ptr->len; ++i) {
@@ -85,63 +86,81 @@ int calc_bits(htpa_bytes * bytes_ptr) {
 int calc_blocks_for_bytes(htpa_bytes * bytes_ptr) {
   int blocks = 0;
   for (int i = 0; i < bytes_ptr->len; ++i) {
-    if ((i * CHAR_BIT) % BLOCK_LEN == 0) {
+    if (i % BLOCK_BYTE_LEN == 0) {
       blocks++;
     }
   }
-  debug_print(1, "Number of blocks: %i (%i bits)\n", blocks, blocks * BLOCK_LEN);
+  debug_print(1, "Number of blocks: %i (%i bytes, %i bits)\n", blocks, blocks * BLOCK_BYTE_LEN, blocks * BLOCK_LEN);
   return blocks;
 }
 
-htpa_block ** split_into_blocks(htpa_bytes * bytes_ptr) {
+void split_into_blocks(htpa_bytes * bytes_ptr) {
   int blocks_total_num = calc_blocks_for_bytes(bytes_ptr);
   int block_num = 0;
-  htpa_bytes * bytes_ptr_index = bytes_ptr; // so we can traverse original byte stream without breaking original pointer
+  unsigned char * cursor = bytes_ptr->bytes; // a cursor to traverse the index of the actual bytes array
 
-  // making space for the array of pointers
-  htpa_block **blocks_ptr_array;
-  // blocks_ptr_array = (htpa_block **) malloc(sizeof(htpa_block *) * blocks_total_num);
+  debug_print(3, "Allocating memory for blocks array struct of size %i\n", blocks_total_num);
 
-  // making space for each individual pointer
-  // for(int i = 0; i < blocks_total_num; i++) {
-  //    blocks_ptr_array[i] = (htpa_block *) malloc(sizeof(htpa_block));
-  //    blocks_ptr_array[i]->data = (htpa_bytes *) malloc(sizeof(htpa_bytes)); // make space for a byte pointer
-  //    blocks_ptr_array[i]->data->len = (BLOCK_LEN / CHAR_BIT);
-  // }
+  // Allocate memory for a pointer to the array struct
+  htpa_blocks_array *byte_streams_array = (htpa_blocks_array *) malloc(sizeof(htpa_blocks_array));
+  debug_print(4, "Allocated memory for blocks array structure.%s","\n");
 
-  // iterate through the bytes_ptr's data and break it into blocks
+  // Allocate memory for blocks array pointer and each block struct
+  byte_streams_array->size = blocks_total_num;
+  byte_streams_array->blocks = (htpa_bytes **) malloc(sizeof(htpa_bytes *) * blocks_total_num);
+  debug_print(4, "Allocated memory for %i block pointers for blocks array struct.\n", blocks_total_num);
+  for (int i = 0; i < blocks_total_num; ++i)
+  {
+    byte_streams_array->blocks[i] = (htpa_bytes *) malloc(sizeof(htpa_bytes));
+    byte_streams_array->blocks[i]->len = BLOCK_BYTE_LEN;
+    byte_streams_array->blocks[i]->bytes = (unsigned char *) calloc(BLOCK_BYTE_LEN, sizeof(unsigned char));
+    debug_print(4, "Allocated memory for block %i of %i struct for array.\n", i+1, blocks_total_num);
+  }
+
+  // iterate through the long bytes_ptr byte stream and break it into blocks
   for (int i = 0; i < bytes_ptr->len; ++i) {
-    if ((i * CHAR_BIT) % BLOCK_LEN == 0) {
+    int remaining_bytes = bytes_ptr->len - i;
+    if (i % BLOCK_BYTE_LEN == 0) {
       ++block_num;
-      // blocks_ptr_array[i]->number = ++block_num;
+      if(remaining_bytes < BLOCK_BYTE_LEN) {
+        int byte_pad_size = BLOCK_BYTE_LEN - remaining_bytes;
+        debug_print(2, "Block %i of %i is short %i bytes (%i bits)! memcpy'ing only %i bytes\n", block_num, blocks_total_num, byte_pad_size, byte_pad_size * CHAR_BIT, remaining_bytes);
+        memcpy(byte_streams_array->blocks[block_num-1]->bytes, cursor, remaining_bytes);
+      } else {
+        memcpy(byte_streams_array->blocks[block_num-1]->bytes, cursor, BLOCK_BYTE_LEN);
+      }
 
-      // memcpy(blocks_ptr_array[i]->data->bytes, bytes_ptr_index, (BLOCK_LEN / CHAR_BIT));
-      debug_print(2, "Block %i of %i: \n", block_num, blocks_total_num);
+      char *blck_txt = get_bytes_str(byte_streams_array->blocks[block_num-1]);
+      char *blck_hex = get_bytes_hex(byte_streams_array->blocks[block_num-1]);
+      debug_print(2, "Block %i of %i: \"%s\"\n", block_num, blocks_total_num, blck_txt);
+      debug_print(2, "Block %i of %i: \"%s\"\n", block_num, blocks_total_num, blck_hex);
+      free(blck_txt); blck_txt = NULL;
+      free(blck_hex); blck_hex = NULL;
+
+      cursor = cursor + BLOCK_BYTE_LEN;
     }
   }
 
-  return blocks_ptr_array;
+  free_blocks_array(byte_streams_array);
 }
 
-void free_blocks_array(htpa_block ** array_ptr) {
-  // TODO
+void free_blocks_array(htpa_blocks_array *array_ptr) {
+  debug_print(3, "Deallocating memory for blocks array struct of size %i.\n", array_ptr->size);
+  for (int i = 0; i < array_ptr->size; ++i)
+  {
+    free(array_ptr->blocks[i]->bytes); array_ptr->blocks[i]->bytes = NULL;
+    free(array_ptr->blocks[i]); array_ptr->blocks[i] = NULL;
+    debug_print(4, "Freed block %i of %i in array\n", (i+1), array_ptr->size);
+  }
+  free(array_ptr->blocks); array_ptr->blocks = NULL;
+  debug_print(4, "Freed blocks pointer%s", "\n");
+  free(array_ptr); array_ptr = NULL;
+  debug_print(4, "Freed blocks array!%s", "\n");
 }
 
-// char* pad_block(char *str) {
-//   char * padded_str = (char *) malloc((BLOCK_LEN / CHAR_BIT) + 1); // allow space for null-byte???
-
-//   if (calc_bits(str) == BLOCK_LEN) {
-//     debug_print(1, "Padding not required! Returning string block unpadded%s", "\n");
-//   } else {
-//     int padlen = BLOCK_LEN - (strlen(str) * CHAR_BIT);
-//     debug_print(2, "Need to pad block with %i bits\n", padlen);
-
-//     strcat(padded_str, str);
-//     for (int i = 0; i < (padlen/CHAR_BIT); ++i) {
-//       strcat(padded_str, " "); // takes care of null-bytes for me (removes dest's and add's src's)
-//     }
-//   }
-
-//   // TODO: ask Geordie on how to deal with returning of local vars
-//   return padded_str;
-// }
+void pad_bytes(htpa_bytes * bytes_ptr) {
+  int new_size = bytes_ptr->len + (BLOCK_BYTE_LEN - (bytes_ptr->len % BLOCK_BYTE_LEN));
+  debug_print(3, "Resizing byte stream to a total of %i bytes (%i bits)\n", new_size, new_size * CHAR_BIT);
+  bytes_ptr->bytes = (unsigned char *) realloc(bytes_ptr->bytes, new_size * sizeof(unsigned char));
+  bytes_ptr->len = new_size;
+}
