@@ -23,13 +23,15 @@ int main(int argc, char const *argv[]) {
   printf("Key "); fprint_bytes_hex(stdout, key_ptr);
   printf("Key "); fprint_bytes_str(stdout, key_ptr);
 
-  char plaintext_str[] = "Hello and goodbye, my friend.";
+  char plaintext_str[] = "Hello and goodbye, my friend. J!";
+  // char plaintext_str[] = "Hello and goodbye, my friend.";
   // char plaintext_str[] = "AAA";
   // char plaintext_str[] = {0x41, 0x41, 0x41, 0x41};
   htpa_bytes plaintext;
 
   plaintext.bytes = (unsigned char *) plaintext_str;
   plaintext.len = strlen(plaintext_str);
+  // plaintext.len = 4;
   htpa_bytes *plaintext_ptr = &plaintext;
 
   printf("Plaintext "); fprint_bytes_hex(stdout, plaintext_ptr);
@@ -124,6 +126,7 @@ htpa_blocks_array * split_into_blocks(htpa_bytes * bytes_ptr) {
   {
     byte_streams_array->blocks[i] = (htpa_bytes *) malloc(sizeof(htpa_bytes));
     byte_streams_array->blocks[i]->len = BLOCK_BYTE_LEN;
+    // calloc() used because it fills the array with nulls. Useful because last block, if short, will leave those nulls as padding
     byte_streams_array->blocks[i]->bytes = (unsigned char *) calloc(BLOCK_BYTE_LEN, sizeof(unsigned char));
     debug_print(4, "Allocated memory for block %i of %i struct for array.\n", i+1, blocks_total_num);
   }
@@ -134,6 +137,7 @@ htpa_blocks_array * split_into_blocks(htpa_bytes * bytes_ptr) {
     if (i % BLOCK_BYTE_LEN == 0) {
       ++block_num;
       if(remaining_bytes < BLOCK_BYTE_LEN) {
+        // this / last block is short and needs "padding". Only copy the remaining bytes, leaving the rest of the block filled with NULLs
         int byte_pad_size = BLOCK_BYTE_LEN - remaining_bytes;
         debug_print(2, "Block %i of %i is short %i bytes (%i bits)! memcpy'ing only %i bytes\n", block_num, blocks_total_num, byte_pad_size, byte_pad_size * CHAR_BIT, remaining_bytes);
         memcpy(byte_streams_array->blocks[block_num-1]->bytes, cursor, remaining_bytes);
@@ -148,6 +152,7 @@ htpa_blocks_array * split_into_blocks(htpa_bytes * bytes_ptr) {
       free(blck_txt); blck_txt = NULL;
       free(blck_hex); blck_hex = NULL;
 
+      // offset cursor to next block position for copying
       cursor = cursor + BLOCK_BYTE_LEN;
     }
   }
