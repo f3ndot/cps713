@@ -8,10 +8,12 @@
 #define BLOCK_LEN 128
 #define KEY_LEN 72
 #define ROUND_KEY_LEN 64
+#define BLOCK_HALF_LEN ((int) BLOCK_LEN / 2)
 
 #define BLOCK_BYTE_LEN ((int) BLOCK_LEN / CHAR_BIT)
 #define KEY_BYTE_LEN ((int) KEY_LEN / CHAR_BIT)
 #define ROUND_BYTE_KEY_LEN ((int) ROUND_KEY_LEN / CHAR_BIT)
+#define BLOCK_BYTE_HALF_LEN ((int) BLOCK_HALF_LEN / CHAR_BIT)
 
 
 #ifndef DEBUG_LEVEL

@@ -10,9 +10,10 @@
 
 int main(int argc, char const *argv[]) {
 
-  debug_print(3, "HTPA Block Length:     %i bytes (%i bits)\n", BLOCK_BYTE_LEN, BLOCK_LEN);
-  debug_print(3, "HTPA Key Length:       %i bytes (%i bits)\n", KEY_BYTE_LEN, KEY_LEN);
-  debug_print(3, "HTPA Round Key Length: %i bytes (%i bits)\n", ROUND_BYTE_KEY_LEN, ROUND_KEY_LEN);
+  debug_print(3, "HTPA Block Length:       %i bytes (%i bits)\n", BLOCK_BYTE_LEN, BLOCK_LEN);
+  debug_print(3, "HTPA Block-Half Length:  %i bytes (%i bits)\n", BLOCK_BYTE_HALF_LEN, BLOCK_HALF_LEN);
+  debug_print(3, "HTPA Key Length:         %i bytes (%i bits)\n", KEY_BYTE_LEN, KEY_LEN);
+  debug_print(3, "HTPA Round Key Length:   %i bytes (%i bits)\n", ROUND_BYTE_KEY_LEN, ROUND_KEY_LEN);
 
   char key_str[] = "AAAAAAAAA";
   htpa_bytes key;
@@ -23,8 +24,9 @@ int main(int argc, char const *argv[]) {
   printf("Key "); fprint_bytes_hex(stdout, key_ptr);
   printf("Key "); fprint_bytes_str(stdout, key_ptr);
 
-  char plaintext_str[] = "Hello and goodbye, my friend. J!";
-  // char plaintext_str[] = "Hello and goodbye, my friend.";
+  // char plaintext_str[] = "Hello and goodbye, my friend. J! Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur convallis pulvinar nisl vel tincidunt. Ut velit erat, semper at dapibus at, sollicitudin sit amet sem. Cras fringilla arcu augue. Etiam ipsum leo, sagittis aliquet commodo vitae, rutrum sit amet magna. Nunc eget lectus nunc, at varius augue. Nam sodales condimentum libero non imperdiet. Nullam in tellus aliquet libero aliquam venenatis. Praesent imperdiet placerat mauris, suscipit vestibulum massa fringilla et. Fusce at sapien egestas turpis porttitor lobortis. Sed fermentum sagittis tortor quis blandit. Maecenas sed diam quam. Aliquam nisi massa, vestibulum eu fringilla sed, consectetur elementum eros. Ut gravida lectus a eros vestibulum at vestibulum erat molestie.";
+  // char plaintext_str[] = "Hello and goodbye, my friend. J!";
+  char plaintext_str[] = "Hello and goodbye, my friend.";
   // char plaintext_str[] = "AAA";
   // char plaintext_str[] = {0x41, 0x41, 0x41, 0x41};
   htpa_bytes plaintext;
