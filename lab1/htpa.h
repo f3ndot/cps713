@@ -29,6 +29,7 @@ typedef struct htpa_block_array_tag {
 } htpa_blocks_array;
 
 
+void printf_blocks_array(htpa_blocks_array * array_ptr);
 void fprint_bytes_hex(FILE *stream, htpa_bytes *);
 void fprint_bytes_str(FILE *stream, htpa_bytes *);
 char * get_bytes_hex(htpa_bytes *); // string of bytes represented hex, takes pointer to htpa_bytes struct
@@ -37,7 +38,7 @@ char * get_bytes_str(htpa_bytes *); // string of bytes represented ASCII, takes 
 int calc_bits(htpa_bytes *); // Returns number of bits of byte array
 int calc_blocks_for_bytes(htpa_bytes *); // Returns number of blocks needed in a byte array
 
-void split_into_blocks(htpa_bytes *); // breaks a byte array of any size into blocks (array of htpa_block)
+htpa_blocks_array * split_into_blocks(htpa_bytes *); // breaks a byte array of any size into blocks (array of htpa_bytes)
 void pad_bytes(htpa_bytes *); // reallocates space of byte stream to fit modulo BLOCK_BYTE_LEN
 void free_blocks_array(htpa_blocks_array *); // Frees up memory of the blocks' byte arrays, the blocks themselves, and their array
 

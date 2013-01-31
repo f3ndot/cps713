@@ -36,9 +36,20 @@ int main(int argc, char const *argv[]) {
   printf("Plaintext "); fprint_bytes_str(stdout, plaintext_ptr);
 
   debug_print(1, "Splitting plaintext into blocks%s", "\n");
-  split_into_blocks(plaintext_ptr);
+  htpa_blocks_array *plaintext_blocks = split_into_blocks(plaintext_ptr);
 
+
+
+  free_blocks_array(plaintext_blocks);
   exit(EXIT_SUCCESS);
+}
+
+void printf_blocks_array(htpa_blocks_array * array_ptr) {
+  for (int i = 0; i < array_ptr->size; ++i)
+  {
+    printf("Block %i: ", i+1); fprint_bytes_str(stdout, array_ptr->blocks[i]);
+    printf("Block %i: ", i+1); fprint_bytes_hex(stdout, array_ptr->blocks[i]);
+  }
 }
 
 void fprint_bytes_hex(FILE *stream, htpa_bytes * bytes_ptr) {
@@ -94,7 +105,7 @@ int calc_blocks_for_bytes(htpa_bytes * bytes_ptr) {
   return blocks;
 }
 
-void split_into_blocks(htpa_bytes * bytes_ptr) {
+htpa_blocks_array * split_into_blocks(htpa_bytes * bytes_ptr) {
   int blocks_total_num = calc_blocks_for_bytes(bytes_ptr);
   int block_num = 0;
   unsigned char * cursor = bytes_ptr->bytes; // a cursor to traverse the index of the actual bytes array
@@ -141,7 +152,7 @@ void split_into_blocks(htpa_bytes * bytes_ptr) {
     }
   }
 
-  free_blocks_array(byte_streams_array);
+  return byte_streams_array;
 }
 
 void free_blocks_array(htpa_blocks_array *array_ptr) {
