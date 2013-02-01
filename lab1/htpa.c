@@ -251,23 +251,40 @@ void htpa_round(htpa_bytes *block) {
   int i;
   unsigned char left_side[BLOCK_BYTE_HALF_LEN];
   unsigned char right_side[BLOCK_BYTE_HALF_LEN];
+  unsigned char round_key[ROUND_BYTE_KEY_LEN] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
 
   // copy left-side of block into temp array
-  memcpy(&left_side, cursor, BLOCK_BYTE_HALF_LEN);
+  memcpy(left_side, cursor, BLOCK_BYTE_HALF_LEN);
   cursor = cursor + BLOCK_BYTE_HALF_LEN; // cursor is now at the start of the right-side half
-  memcpy(&right_side, cursor, BLOCK_BYTE_HALF_LEN);
+  memcpy(right_side, cursor, BLOCK_BYTE_HALF_LEN);
   debug_print(4, "Copied block halves into temp arrays%s", "\n");
 
   // copy right-side into left-side of block
-  memcpy(block->bytes, &right_side, BLOCK_BYTE_HALF_LEN);
+  memcpy(block->bytes, right_side, BLOCK_BYTE_HALF_LEN);
   debug_print(4, "Copied right-side half into left-side half of block%s", "\n");
 
   // this left_side variable will be the new "right-side" once it's XOR'd with the old right-side's function output
+  debug_print(3, "Sending right-side and round key into round function%s", "\n");
+  htpa_round_function(right_side, round_key);
   for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
     left_side[i] = left_side[i] ^ right_side[i];
   }
+  debug_print(3, "XOR'd the round function's output with left-ride%s", "\n");
 
   // copy temp array (left-side) to right-side of block
-  memcpy(cursor, &left_side, BLOCK_BYTE_HALF_LEN);
+  memcpy(cursor, left_side, BLOCK_BYTE_HALF_LEN);
   debug_print(4, "Copied left-side half into right-side half of block%s", "\n");
+  debug_print(3, "Completed fiestal swap for round!%s", "\n");
+}
+
+void htpa_round_function(unsigned char *block_half_bytes_ptr, unsigned char *round_key_ptr) {
+  int i;
+  for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
+    block_half_bytes_ptr[i] = block_half_bytes_ptr[i] ^ round_key_ptr[i];
+  }
+  debug_print(3, "XOR'd the right-side with round key%s", "\n");
+  for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
+    block_half_bytes_ptr[i] = subbyte(block_half_bytes_ptr[i]);
+  }
+  debug_print(3, "Substituded bytes!%s", "\n");
 }

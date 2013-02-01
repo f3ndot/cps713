@@ -18,7 +18,6 @@
 #define ROUND_BYTE_KEY_LEN ((int) ROUND_KEY_LEN / CHAR_BIT)
 #define BLOCK_BYTE_HALF_LEN ((int) BLOCK_HALF_LEN / CHAR_BIT)
 
-
 #ifndef DEBUG_LEVEL
 #define DEBUG_LEVEL 1
 #endif
@@ -68,6 +67,7 @@ void free_blocks_array(htpa_blocks_array *array); // Frees up memory of the bloc
 
 unsigned char subbyte(unsigned char); // uses sbox[256] to substitute a byte
 void htpa_round(htpa_bytes *block); // performs the HTPA iteration on the block
+void htpa_round_function(unsigned char *block_half, unsigned char *round_key); // performs the HTPA round function on the block_half
 
 #define debug_print(level, fmt, ...) \
         do { if (DEBUG && level <= DEBUG_LEVEL) fprintf(stderr, "%s:%d:%s(): [DEBUG %i] " fmt, __FILE__, \
