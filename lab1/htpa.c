@@ -211,3 +211,7 @@ void pad_bytes(htpa_bytes * bytes_ptr) {
   bytes_ptr->bytes = (unsigned char *) realloc(bytes_ptr->bytes, new_size * sizeof(unsigned char));
   bytes_ptr->len = new_size;
 }
+
+unsigned char subbyte(unsigned char byte) {
+  return sbox[byte];
+}
