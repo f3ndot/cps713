@@ -1,4 +1,4 @@
-#define DEBUG 0
+#define DEBUG 1
 #define DEBUG_LEVEL 4
 
 #include <limits.h>
@@ -54,37 +54,49 @@ int main(int argc, char **argv) {
   key.len = KEY_BYTE_LEN;
 
   printf("%i Rounds chosen for HTPA encipherment process\n", htpa_rounds);
-  printf("HTPA Key "); fprint_bytes_hex(stdout, key_ptr);
-  printf("HTPA Key "); fprint_bytes_str(stdout, key_ptr);
+  printf("HTPA Key   "); fprint_bytes_hex(stdout, key_ptr);
+  printf("HTPA Key   "); fprint_bytes_str(stdout, key_ptr);
 
-  printf("Plaintext "); fprint_bytes_hex(stdout, plaintext_ptr);
-  printf("Plaintext "); fprint_bytes_str(stdout, plaintext_ptr);
+  printf("Plaintext  "); fprint_bytes_hex(stdout, plaintext_ptr);
+  printf("Plaintext  "); fprint_bytes_str(stdout, plaintext_ptr);
 
   debug_print(1, "Splitting plaintext into blocks%s", "\n");
   htpa_blocks_array *plaintext_blocks = split_into_blocks(plaintext_ptr);
 
+
+  htpa_bytes ciphertext; htpa_bytes *ciphertext_ptr = &ciphertext;
+  ciphertext.len = BLOCK_BYTE_LEN * calc_blocks_for_bytes(plaintext_ptr);
+  ciphertext.bytes = (unsigned char *) calloc(ciphertext.len, sizeof(unsigned char));
+  debug_print(3, "Allocated memory for for %i bytes of ciphertext\n", ciphertext.len);
+  unsigned char *cursor = ciphertext_ptr->bytes;
+
   int i; int j;
   for (i = 0; i < plaintext_blocks->size; ++i) {
-    debug_print(3, "Looping in block %i of %i\n", i+1, plaintext_blocks->size);
+    debug_print(1, "Block %i of %i: Encipherment algorithm starting!\n", i+1, plaintext_blocks->size);
     for (j = 0; j < htpa_rounds; ++j) {
       htpa_round(plaintext_blocks->blocks[i]);
 
       char *blck_txt = get_bytes_str(plaintext_blocks->blocks[i]);
       char *blck_hex = get_bytes_hex(plaintext_blocks->blocks[i]);
-      debug_print(3, "Block %i of %i: HTPA Round %i of %i: %s\n", i+1, plaintext_blocks->size, j+1, htpa_rounds, blck_txt);
+      debug_print(3, "Block %i of %i: HTPA Round %i of %i: \"%s\"\n", i+1, plaintext_blocks->size, j+1, htpa_rounds, blck_txt);
       debug_print(3, "Block %i of %i: HTPA Round %i of %i: %s\n", i+1, plaintext_blocks->size, j+1, htpa_rounds, blck_hex);
       free(blck_txt); blck_txt = NULL;
       free(blck_hex); blck_hex = NULL;
-
     }
+    debug_print(2, "Block %i of %i: copying bytes into final ciphertext byte array\n", i+1, plaintext_blocks->size);
+    memcpy(cursor, plaintext_blocks->blocks[i]->bytes, BLOCK_BYTE_LEN);
+    debug_print(3, "Block %i of %i: Moved cursor to array position %i\n", (i+1), plaintext_blocks->size, (i+1)*BLOCK_BYTE_LEN);
+    cursor = cursor + BLOCK_BYTE_LEN;
   }
 
-  printf("Ciphertext "); fprint_bytes_hex(stdout, plaintext_ptr);
-  printf("Ciphertext "); fprint_bytes_str(stdout, plaintext_ptr);
+
+  printf("Ciphertext "); fprint_bytes_hex(stdout, ciphertext_ptr);
+  printf("Ciphertext "); fprint_bytes_str(stdout, ciphertext_ptr);
 
   free_blocks_array(plaintext_blocks);
-  free(plaintext.bytes);
-  free(key.bytes);
+  free(key.bytes); key.bytes = NULL;
+  free(plaintext.bytes); plaintext.bytes = NULL;
+  free(ciphertext.bytes); ciphertext.bytes = NULL;
   exit(EXIT_SUCCESS);
 }
 
