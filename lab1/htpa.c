@@ -10,10 +10,8 @@
 
 int main(int argc, char **argv) {
 
-  printf("HTPA Algorithm -- v.1.0\n");
-  printf("by Justin B. and Jonathan K.\n\n");
-
-  printf("ENCRYPTING:\n----------\n");
+  printf("HTPA Algorithm v.1.0\n");
+  printf("by Justin B. & Jonathan K.\n\n");
 
   // default rounds
   int htpa_rounds = 8;
@@ -29,6 +27,8 @@ int main(int argc, char **argv) {
     printf("Usage: %s filename_or_message key [rounds]\n\n", argv[0]);
     exit(EXIT_FAILURE);
   }
+
+  printf("ENCRYPTING:\n----------\n");
 
   // attempt to open a file, if error assume to be message string
   FILE *fp = fopen(argv[1], "rb");
@@ -291,7 +291,7 @@ void htpa_round(htpa_bytes *block) {
   tmp_left_side.bytes  = (unsigned char *) calloc(BLOCK_BYTE_HALF_LEN, sizeof(unsigned char));
   tmp_right_side.bytes = (unsigned char *) calloc(BLOCK_BYTE_HALF_LEN, sizeof(unsigned char));
   // round_key.bytes      = (unsigned char *) calloc(ROUND_BYTE_KEY_LEN,  sizeof(unsigned char));
-  round_key.bytes = "AAAAAAAA";
+  round_key.bytes = (unsigned char *) "AAAAAAAA";
   debug_print(4, "Allocated byte stream structs for halves and round key%s", "\n");
 
   memcpy(tmp_left_side.bytes,  left_index,  BLOCK_BYTE_HALF_LEN);
@@ -303,8 +303,8 @@ void htpa_round(htpa_bytes *block) {
   debug_print(4, "Copied right-side half into left-side half of block%s", "\n");
 
   // this tmp_left_side variable will be the new "right-side" once it's XOR'd with the old right-side's function output
-  debug_print(3, "Sending right-side and round key into round function%s", "\n");
-  htpa_round_function(&tmp_right_side, &round_key);
+  // debug_print(3, "Sending right-side and round key into round function%s", "\n");
+  // htpa_round_function(&tmp_right_side, &round_key);
   for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
     tmp_left_side.bytes[i] = tmp_right_side.bytes[i] ^ tmp_left_side.bytes[i];
   }
@@ -328,15 +328,15 @@ void htpa_final_round(htpa_bytes *block) {
 
   htpa_bytes round_key;      round_key.len      = ROUND_BYTE_KEY_LEN;
   // round_key.bytes = (unsigned char *) calloc(ROUND_BYTE_KEY_LEN,  sizeof(unsigned char));
-  round_key.bytes = "AAAAAAAA";
+  round_key.bytes = (unsigned char *) "AAAAAAAA";
 
   htpa_bytes tmp_right_side; tmp_right_side.len = BLOCK_BYTE_HALF_LEN;
   tmp_right_side.bytes = (unsigned char *) calloc(BLOCK_BYTE_HALF_LEN, sizeof(unsigned char));
   memcpy(tmp_right_side.bytes, right_index, BLOCK_BYTE_HALF_LEN);
 
   // this tmp_left_side variable will be the new "right-side" once it's XOR'd with the old right-side's function output
-  debug_print(3, "Sending right-side and round key into round function%s", "\n");
-  htpa_round_function(&tmp_right_side, &round_key);
+  // debug_print(3, "Sending right-side and round key into round function%s", "\n");
+  // htpa_round_function(&tmp_right_side, &round_key);
   for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
     left_index[i] = tmp_right_side.bytes[i] ^ left_index[i];
   }
