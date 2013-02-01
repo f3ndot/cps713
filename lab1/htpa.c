@@ -1,5 +1,5 @@
 #define DEBUG 1
-#define DEBUG_LEVEL 4
+#define DEBUG_LEVEL 3
 
 #include <limits.h>
 #include <stdio.h>
@@ -63,7 +63,21 @@ int main(int argc, char **argv) {
   debug_print(1, "Splitting plaintext into blocks%s", "\n");
   htpa_blocks_array *plaintext_blocks = split_into_blocks(plaintext_ptr);
 
+  int i; int j;
+  for (i = 0; i < plaintext_blocks->size; ++i) {
+    debug_print(3, "Looping in block %i of %i\n", i+1, plaintext_blocks->size);
+    for (j = 0; j < htpa_rounds; ++j) {
+      htpa_round(plaintext_blocks->blocks[i]);
 
+      char *blck_txt = get_bytes_str(plaintext_blocks->blocks[i]);
+      char *blck_hex = get_bytes_hex(plaintext_blocks->blocks[i]);
+      debug_print(3, "Block %i of %i: HTPA Round %i of %i: %s\n", i+1, plaintext_blocks->size, j+1, htpa_rounds, blck_txt);
+      debug_print(3, "Block %i of %i: HTPA Round %i of %i: %s\n", i+1, plaintext_blocks->size, j+1, htpa_rounds, blck_hex);
+      free(blck_txt); blck_txt = NULL;
+      free(blck_hex); blck_hex = NULL;
+
+    }
+  }
 
   free_blocks_array(plaintext_blocks);
   free(plaintext.bytes);
@@ -214,4 +228,26 @@ void pad_bytes(htpa_bytes * bytes_ptr) {
 
 unsigned char subbyte(unsigned char byte) {
   return sbox[byte];
+}
+
+void htpa_round(htpa_bytes *block) {
+  unsigned char * cursor = block->bytes; // a cursor to let me travel the byte array
+
+  int i;
+  char temp[BLOCK_BYTE_HALF_LEN];
+
+  // copy left-side of block into temp array
+  memcpy(&temp, cursor, BLOCK_BYTE_HALF_LEN);
+  debug_print(4, "Copied left-side of block into temp array%s", "\n");
+
+  // move cursor to right-side's start
+  cursor = cursor + BLOCK_BYTE_HALF_LEN;
+  debug_print(4, "Moved cursor to right-side of block%s", "\n");
+
+  // move right-side into left
+  memcpy(block->bytes, cursor, BLOCK_BYTE_HALF_LEN);
+  debug_print(4, "Copied right-side into left-side of block%s", "\n");
+
+  memcpy(cursor, &temp, BLOCK_BYTE_HALF_LEN);
+  debug_print(4, "Copied left-side into right-side of block%s", "\n");
 }
