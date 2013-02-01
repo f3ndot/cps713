@@ -4,7 +4,7 @@ This is the HTPA part of Assignment 1.
 
 To run it do any of the following:
 
-make test_simple       -- Tests with a 22 byte (2 block) message
+make simple_test       -- Tests with a 22 byte (2 block) message using 1 round
 make test              -- Tests with a 132 byte (9 block) message in a file
 make test16            -- Same as `make test` but uses 16 rounds
 

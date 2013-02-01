@@ -7,7 +7,7 @@ htpa.o: htpa.c
 	gcc -c htpa.c
 
 simple_test: htpa
-	./htpa "Hello TA, this is HTPA" MyKeyGood
+	./htpa "Hello TA, this is HTPA" MyKeyGood 1
 
 test: htpa
 	./htpa plaintext_message.txt MyKeyGood

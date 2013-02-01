@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
   htpa_bytes key; htpa_bytes *key_ptr = &key;
 
   if(argc <= 2) {
-    printf("Usage: %s filename key [rounds]\n\n", argv[0]);
+    printf("Usage: %s filename_or_message key [rounds]\n\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
@@ -131,7 +131,7 @@ char * get_bytes_hex(htpa_bytes * bytes_ptr) {
 
   for (i = 0; i < bytes_ptr->len; ++i) {
     if (i > 0) sprintf(str, "%s ", str);
-    sprintf(str, "%s%02X", str, bytes_ptr->bytes[i]);
+    sprintf(str, "%s%.2X", str, bytes_ptr->bytes[i]);
   }
 
   return str;
@@ -249,20 +249,25 @@ void htpa_round(htpa_bytes *block) {
   unsigned char * cursor = block->bytes; // a cursor to let me travel the byte array
 
   int i;
-  char temp[BLOCK_BYTE_HALF_LEN];
+  unsigned char left_side[BLOCK_BYTE_HALF_LEN];
+  unsigned char right_side[BLOCK_BYTE_HALF_LEN];
 
   // copy left-side of block into temp array
-  memcpy(&temp, cursor, BLOCK_BYTE_HALF_LEN);
-  debug_print(4, "Copied left-side of block into temp array%s", "\n");
+  memcpy(&left_side, cursor, BLOCK_BYTE_HALF_LEN);
+  cursor = cursor + BLOCK_BYTE_HALF_LEN; // cursor is now at the start of the right-side half
+  memcpy(&right_side, cursor, BLOCK_BYTE_HALF_LEN);
+  debug_print(4, "Copied block halves into temp arrays%s", "\n");
 
-  // move cursor to right-side's start
-  cursor = cursor + BLOCK_BYTE_HALF_LEN;
-  debug_print(4, "Moved cursor to right-side of block%s", "\n");
+  // copy right-side into left-side of block
+  memcpy(block->bytes, &right_side, BLOCK_BYTE_HALF_LEN);
+  debug_print(4, "Copied right-side half into left-side half of block%s", "\n");
 
-  // move right-side into left
-  memcpy(block->bytes, cursor, BLOCK_BYTE_HALF_LEN);
-  debug_print(4, "Copied right-side into left-side of block%s", "\n");
+  // this left_side variable will be the new "right-side" once it's XOR'd with the old right-side's function output
+  for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
+    left_side[i] = left_side[i] ^ right_side[i];
+  }
 
-  memcpy(cursor, &temp, BLOCK_BYTE_HALF_LEN);
-  debug_print(4, "Copied left-side into right-side of block%s", "\n");
+  // copy temp array (left-side) to right-side of block
+  memcpy(cursor, &left_side, BLOCK_BYTE_HALF_LEN);
+  debug_print(4, "Copied left-side half into right-side half of block%s", "\n");
 }
