@@ -10,20 +10,20 @@
 
 int main(int argc, char **argv) {
 
-  debug_print(3, "HTPA Block Length:       %i bytes (%i bits)\n", BLOCK_BYTE_LEN, BLOCK_LEN);
-  debug_print(3, "HTPA Block-Half Length:  %i bytes (%i bits)\n", BLOCK_BYTE_HALF_LEN, BLOCK_HALF_LEN);
-  debug_print(3, "HTPA Key Length:         %i bytes (%i bits)\n", KEY_BYTE_LEN, KEY_LEN);
-  debug_print(3, "HTPA Round Key Length:   %i bytes (%i bits)\n", ROUND_BYTE_KEY_LEN, ROUND_KEY_LEN);
-
+  // default rounds
   int htpa_rounds = 8;
+
+  // create the structs for the algorithm
   htpa_bytes plaintext; htpa_bytes *plaintext_ptr = &plaintext;
   htpa_bytes key; htpa_bytes *key_ptr = &key;
 
+  // ensure there are the right arugments
   if(argc <= 2) {
     printf("Usage: %s filename_or_message key [rounds]\n\n", argv[0]);
     exit(EXIT_FAILURE);
   }
 
+  // attempt to open a file, if error assume to be message string
   FILE *fp = fopen(argv[1], "rb");
   if(fp) {
     debug_print(3, "Opened file \"%s\" for plaintext\n", argv[1]);
@@ -45,27 +45,47 @@ int main(int argc, char **argv) {
     plaintext.len = strlen(argv[1]);
   }
 
+  // if a rounds parameter is sent, update variable
   if(argc >= 4) {
     htpa_rounds = atoi(argv[3]);
   }
 
+  // allocate memory for the key
   key.bytes = (unsigned char *) calloc(KEY_BYTE_LEN, sizeof(unsigned char));
   memcpy(key.bytes, argv[2], strlen(argv[2]));
   key.len = KEY_BYTE_LEN;
 
-  printf("%i Rounds chosen for HTPA encipherment process\n", htpa_rounds);
-  printf("HTPA Key   "); fprint_bytes_hex(stdout, key_ptr);
-  printf("HTPA Key   "); fprint_bytes_str(stdout, key_ptr);
+  // perform the HTPA algorithm and save to a file
+  htpa_bytes *ciphertext = htpa_algorithm(plaintext_ptr, key_ptr, htpa_rounds);
 
-  printf("Plaintext  "); fprint_bytes_hex(stdout, plaintext_ptr);
-  printf("Plaintext  "); fprint_bytes_str(stdout, plaintext_ptr);
+  // free memory used in byte strings
+  free(ciphertext->bytes); ciphertext->bytes = NULL;
+  free(key_ptr->bytes); key_ptr->bytes = NULL;
+  free(plaintext_ptr->bytes); plaintext_ptr->bytes = NULL;
+  exit(EXIT_SUCCESS);
+}
+
+
+htpa_bytes * htpa_algorithm(htpa_bytes *plaintext, htpa_bytes *key, int rounds) {
+
+  debug_print(3, "HTPA Block Length:       %i bytes (%i bits)\n", BLOCK_BYTE_LEN, BLOCK_LEN);
+  debug_print(3, "HTPA Block-Half Length:  %i bytes (%i bits)\n", BLOCK_BYTE_HALF_LEN, BLOCK_HALF_LEN);
+  debug_print(3, "HTPA Key Length:         %i bytes (%i bits)\n", KEY_BYTE_LEN, KEY_LEN);
+  debug_print(3, "HTPA Round Key Length:   %i bytes (%i bits)\n", ROUND_BYTE_KEY_LEN, ROUND_KEY_LEN);
+
+  printf("%i Rounds chosen for HTPA encipherment process\n", rounds);
+  printf("HTPA Key   "); fprint_bytes_hex(stdout, key);
+  printf("HTPA Key   "); fprint_bytes_str(stdout, key);
+
+  printf("Plaintext  "); fprint_bytes_hex(stdout, plaintext);
+  printf("Plaintext  "); fprint_bytes_str(stdout, plaintext);
 
   debug_print(1, "Splitting plaintext into blocks%s", "\n");
-  htpa_blocks_array *plaintext_blocks = split_into_blocks(plaintext_ptr);
+  htpa_blocks_array *plaintext_blocks = split_into_blocks(plaintext);
 
 
   htpa_bytes ciphertext; htpa_bytes *ciphertext_ptr = &ciphertext;
-  ciphertext.len = BLOCK_BYTE_LEN * calc_blocks_for_bytes(plaintext_ptr);
+  ciphertext.len = BLOCK_BYTE_LEN * calc_blocks_for_bytes(plaintext);
   ciphertext.bytes = (unsigned char *) calloc(ciphertext.len, sizeof(unsigned char));
   debug_print(3, "Allocated memory for for %i bytes of ciphertext\n", ciphertext.len);
   unsigned char *cursor = ciphertext_ptr->bytes;
@@ -73,13 +93,13 @@ int main(int argc, char **argv) {
   int i; int j;
   for (i = 0; i < plaintext_blocks->size; ++i) {
     debug_print(1, "Block %i of %i: Encipherment algorithm starting!\n", i+1, plaintext_blocks->size);
-    for (j = 0; j < htpa_rounds; ++j) {
+    for (j = 0; j < rounds; ++j) {
       htpa_round(plaintext_blocks->blocks[i]);
 
       char *blck_txt = get_bytes_str(plaintext_blocks->blocks[i]);
       char *blck_hex = get_bytes_hex(plaintext_blocks->blocks[i]);
-      debug_print(3, "Block %i of %i: HTPA Round %i of %i: \"%s\"\n", i+1, plaintext_blocks->size, j+1, htpa_rounds, blck_txt);
-      debug_print(3, "Block %i of %i: HTPA Round %i of %i: %s\n", i+1, plaintext_blocks->size, j+1, htpa_rounds, blck_hex);
+      debug_print(3, "Block %i of %i: HTPA Round %i of %i: \"%s\"\n", i+1, plaintext_blocks->size, j+1, rounds, blck_txt);
+      debug_print(3, "Block %i of %i: HTPA Round %i of %i: %s\n", i+1, plaintext_blocks->size, j+1, rounds, blck_hex);
       free(blck_txt); blck_txt = NULL;
       free(blck_hex); blck_hex = NULL;
     }
@@ -94,10 +114,7 @@ int main(int argc, char **argv) {
   printf("Ciphertext "); fprint_bytes_str(stdout, ciphertext_ptr);
 
   free_blocks_array(plaintext_blocks);
-  free(key.bytes); key.bytes = NULL;
-  free(plaintext.bytes); plaintext.bytes = NULL;
-  free(ciphertext.bytes); ciphertext.bytes = NULL;
-  exit(EXIT_SUCCESS);
+  return ciphertext_ptr;
 }
 
 void printf_blocks_array(htpa_blocks_array * array_ptr) {
@@ -265,7 +282,7 @@ void htpa_round(htpa_bytes *block) {
 
   // this left_side variable will be the new "right-side" once it's XOR'd with the old right-side's function output
   debug_print(3, "Sending right-side and round key into round function%s", "\n");
-  htpa_round_function(right_side, round_key);
+  // htpa_round_function(right_side, round_key);
   for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
     left_side[i] = left_side[i] ^ right_side[i];
   }

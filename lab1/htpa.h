@@ -52,6 +52,8 @@ typedef struct htpa_block_array_tag {
 } htpa_blocks_array;
 
 
+htpa_bytes * htpa_algorithm(htpa_bytes *plaintext, htpa_bytes *key, int rounds); // performs the HTPA algorithm and returns encrypted bytes (in HTPA struct)
+
 void printf_blocks_array(htpa_blocks_array *array_ptr);
 void fprint_bytes_hex(FILE *stream, htpa_bytes *bytes);
 void fprint_bytes_str(FILE *stream, htpa_bytes *bytes);
