@@ -1,5 +1,6 @@
 #define DEBUG 1
 #define DEBUG_LEVEL 4
+#define DISABLE_STRING_PRINT 0
 
 #include <limits.h>
 #include <stdio.h>
@@ -171,6 +172,10 @@ char * get_bytes_hex(htpa_bytes * bytes_ptr) {
   return str;
 }
 char * get_bytes_str(htpa_bytes * bytes_ptr) {
+  if(DISABLE_STRING_PRINT) {
+    return NULL;
+  }
+
   int strsize = bytes_ptr->len + 1;
   char * str = (char *) malloc(strsize);
   int i;
