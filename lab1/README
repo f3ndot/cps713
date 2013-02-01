@@ -1,0 +1,18 @@
+Hello Professor or TAs,
+
+This is the HTPA part of Assignment 1.
+
+To run it do any of the following:
+
+make test_simple
+make test
+make test16
+
+or
+
+make && ./htpa filename_or_message key [rounds]
+
+
+*NOTE:*
+You can set the level of debug or turn it on and off in the DEBUG_LEVEL and DEBUG defines in htpa.c accordingly.
+If a DEBUG_LEVEL is not set, it'll default to "1".

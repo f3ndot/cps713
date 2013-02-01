@@ -1,5 +1,5 @@
-#define DEBUG 1
-#define DEBUG_LEVEL 3
+#define DEBUG 0
+#define DEBUG_LEVEL 4
 
 #include <limits.h>
 #include <stdio.h>
@@ -78,6 +78,9 @@ int main(int argc, char **argv) {
 
     }
   }
+
+  printf("Ciphertext "); fprint_bytes_hex(stdout, plaintext_ptr);
+  printf("Ciphertext "); fprint_bytes_str(stdout, plaintext_ptr);
 
   free_blocks_array(plaintext_blocks);
   free(plaintext.bytes);
