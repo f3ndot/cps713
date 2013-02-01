@@ -10,6 +10,11 @@
 
 int main(int argc, char **argv) {
 
+  printf("HTPA Algorithm -- v.1.0\n");
+  printf("by Justin B. and Jonathan K.\n\n");
+
+  printf("ENCRYPTING:\n----------\n");
+
   // default rounds
   int htpa_rounds = 8;
 
@@ -60,9 +65,10 @@ int main(int argc, char **argv) {
   // perform the HTPA algorithm and save to a file
   htpa_algorithm(ciphertext_ptr, plaintext_ptr, key_ptr, htpa_rounds);
 
-  printf("\n===================================\n\n");
+  printf("\n============================================\n\n");
+  printf("DECRYPTING:\n----------\n");
 
-  htpa_algorithm(decrypted_ptr, plaintext_ptr, key_ptr, htpa_rounds);
+  htpa_algorithm(decrypted_ptr, ciphertext_ptr, key_ptr, htpa_rounds);
 
 
   // free memory used in byte strings
@@ -101,7 +107,12 @@ htpa_bytes * htpa_algorithm(htpa_bytes *ciphertext, htpa_bytes *plaintext, htpa_
   for (i = 0; i < plaintext_blocks->size; ++i) {
     debug_print(1, "Block %i of %i: Encipherment algorithm starting!\n", i+1, plaintext_blocks->size);
     for (j = 0; j < rounds; ++j) {
-      htpa_round(plaintext_blocks->blocks[i]);
+      if(j+1 == rounds) {
+        debug_print(3, "Block %i of %i: HTPA Round %i of %i: Final round! Not swapping block halves\n", i+1, plaintext_blocks->size, j+1, rounds);
+        htpa_final_round(plaintext_blocks->blocks[i]);
+      } else {
+        htpa_round(plaintext_blocks->blocks[i]);
+      }
 
       char *blck_txt = get_bytes_str(plaintext_blocks->blocks[i]);
       char *blck_hex = get_bytes_hex(plaintext_blocks->blocks[i]);
@@ -279,7 +290,8 @@ void htpa_round(htpa_bytes *block) {
 
   tmp_left_side.bytes  = (unsigned char *) calloc(BLOCK_BYTE_HALF_LEN, sizeof(unsigned char));
   tmp_right_side.bytes = (unsigned char *) calloc(BLOCK_BYTE_HALF_LEN, sizeof(unsigned char));
-  round_key.bytes      = (unsigned char *) calloc(ROUND_BYTE_KEY_LEN,  sizeof(unsigned char));
+  // round_key.bytes      = (unsigned char *) calloc(ROUND_BYTE_KEY_LEN,  sizeof(unsigned char));
+  round_key.bytes = "AAAAAAAA";
   debug_print(4, "Allocated byte stream structs for halves and round key%s", "\n");
 
   memcpy(tmp_left_side.bytes,  left_index,  BLOCK_BYTE_HALF_LEN);
@@ -292,7 +304,7 @@ void htpa_round(htpa_bytes *block) {
 
   // this tmp_left_side variable will be the new "right-side" once it's XOR'd with the old right-side's function output
   debug_print(3, "Sending right-side and round key into round function%s", "\n");
-  // htpa_round_function(tmp_right_side, round_key);
+  htpa_round_function(&tmp_right_side, &round_key);
   for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
     tmp_left_side.bytes[i] = tmp_right_side.bytes[i] ^ tmp_left_side.bytes[i];
   }
@@ -302,16 +314,49 @@ void htpa_round(htpa_bytes *block) {
   memcpy(right_index, tmp_left_side.bytes, BLOCK_BYTE_HALF_LEN);
   debug_print(4, "Copied left-side half into right-side half of block%s", "\n");
   debug_print(3, "Completed fiestal swap for round!%s", "\n");
+
+  free(tmp_left_side.bytes);
+  free(tmp_right_side.bytes);
+  // free(round_key.bytes);
+  debug_print(4, "Freed byte stream structs for halves and round key%s", "\n");
 }
 
-// void htpa_round_function(htpa_bytes *block_half_bytes_ptr, htpa_bytes *round_key_ptr) {
-//   int i;
-//   for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
-//     block_half_bytes_ptr[i] = block_half_bytes_ptr[i] ^ round_key_ptr[i];
-//   }
-//   debug_print(3, "XOR'd the right-side with round key%s", "\n");
-//   for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
-//     block_half_bytes_ptr[i] = subbyte(block_half_bytes_ptr[i]);
-//   }
-//   debug_print(3, "Substituded bytes!%s", "\n");
-// }
+void htpa_final_round(htpa_bytes *block) {
+  int i;
+  unsigned char * left_index = block->bytes;
+  unsigned char * right_index = left_index + BLOCK_BYTE_HALF_LEN;
+
+  htpa_bytes round_key;      round_key.len      = ROUND_BYTE_KEY_LEN;
+  // round_key.bytes = (unsigned char *) calloc(ROUND_BYTE_KEY_LEN,  sizeof(unsigned char));
+  round_key.bytes = "AAAAAAAA";
+
+  htpa_bytes tmp_right_side; tmp_right_side.len = BLOCK_BYTE_HALF_LEN;
+  tmp_right_side.bytes = (unsigned char *) calloc(BLOCK_BYTE_HALF_LEN, sizeof(unsigned char));
+  memcpy(tmp_right_side.bytes, right_index, BLOCK_BYTE_HALF_LEN);
+
+  // this tmp_left_side variable will be the new "right-side" once it's XOR'd with the old right-side's function output
+  debug_print(3, "Sending right-side and round key into round function%s", "\n");
+  htpa_round_function(&tmp_right_side, &round_key);
+  for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
+    left_index[i] = tmp_right_side.bytes[i] ^ left_index[i];
+  }
+  debug_print(3, "XOR'd the round function's output with left-ride%s", "\n");
+
+  memcpy(right_index, tmp_right_side.bytes, BLOCK_BYTE_HALF_LEN);
+
+  free(tmp_right_side.bytes);
+  // free(round_key.bytes);
+  debug_print(4, "Freed byte stream structs for round key%s", "\n");
+}
+
+void htpa_round_function(htpa_bytes *block_half, htpa_bytes *round_key) {
+  int i;
+  for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
+    block_half->bytes[i] = block_half->bytes[i] ^ round_key->bytes[i];
+  }
+  debug_print(3, "XOR'd the right-side with round key%s", "\n");
+  for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
+    block_half->bytes[i] = subbyte(block_half->bytes[i]);
+  }
+  debug_print(3, "Substituded bytes!%s", "\n");
+}

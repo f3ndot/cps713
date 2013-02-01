@@ -69,7 +69,8 @@ void free_blocks_array(htpa_blocks_array *array); // Frees up memory of the bloc
 
 unsigned char subbyte(unsigned char); // uses sbox[256] to substitute a byte
 void htpa_round(htpa_bytes *block); // performs the HTPA iteration on the block
-// void htpa_round_function(htpa_bytes *block_half, htpa_bytes *round_key); // performs the HTPA round function on the block_half
+void htpa_final_round(htpa_bytes *block); // final iteration does not swap the block halves
+void htpa_round_function(htpa_bytes *block_half, htpa_bytes *round_key); // performs the HTPA round function on the block_half
 
 #define debug_print(level, fmt, ...) \
         do { if (DEBUG && level <= DEBUG_LEVEL) fprintf(stderr, "%s:%d:%s(): [DEBUG %i] " fmt, __FILE__, \
