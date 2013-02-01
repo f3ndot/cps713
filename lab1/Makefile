@@ -6,5 +6,8 @@ htpa: htpa.o
 htpa.o: htpa.c
 	gcc -c htpa.c
 
+test: htpa
+	./htpa plaintext_message.txt MyKeyGood
+
 clean:
 	rm -rf *.o htpa
