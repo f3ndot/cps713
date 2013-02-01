@@ -9,5 +9,8 @@ htpa.o: htpa.c
 test: htpa
 	./htpa plaintext_message.txt MyKeyGood
 
+test16: htpa
+	./htpa plaintext_message.txt MyKeyGood 16
+
 clean:
 	rm -rf *.o htpa

@@ -15,6 +15,7 @@ int main(int argc, char **argv) {
   debug_print(3, "HTPA Key Length:         %i bytes (%i bits)\n", KEY_BYTE_LEN, KEY_LEN);
   debug_print(3, "HTPA Round Key Length:   %i bytes (%i bits)\n", ROUND_BYTE_KEY_LEN, ROUND_KEY_LEN);
 
+  int htpa_rounds = 8;
   htpa_bytes plaintext; htpa_bytes *plaintext_ptr = &plaintext;
   htpa_bytes key; htpa_bytes *key_ptr = &key;
 
@@ -44,10 +45,15 @@ int main(int argc, char **argv) {
     plaintext.len = strlen(argv[1]);
   }
 
+  if(argc >= 4) {
+    htpa_rounds = atoi(argv[3]);
+  }
+
   key.bytes = (unsigned char *) calloc(KEY_BYTE_LEN, sizeof(unsigned char));
   memcpy(key.bytes, argv[2], strlen(argv[2]));
   key.len = KEY_BYTE_LEN;
 
+  printf("%i Rounds chosen for HTPA encipherment process\n", htpa_rounds);
   printf("HTPA Key "); fprint_bytes_hex(stdout, key_ptr);
   printf("HTPA Key "); fprint_bytes_str(stdout, key_ptr);
 
