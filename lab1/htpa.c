@@ -8,33 +8,48 @@
 #include "htpa.h"
 
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char **argv) {
 
   debug_print(3, "HTPA Block Length:       %i bytes (%i bits)\n", BLOCK_BYTE_LEN, BLOCK_LEN);
   debug_print(3, "HTPA Block-Half Length:  %i bytes (%i bits)\n", BLOCK_BYTE_HALF_LEN, BLOCK_HALF_LEN);
   debug_print(3, "HTPA Key Length:         %i bytes (%i bits)\n", KEY_BYTE_LEN, KEY_LEN);
   debug_print(3, "HTPA Round Key Length:   %i bytes (%i bits)\n", ROUND_BYTE_KEY_LEN, ROUND_KEY_LEN);
 
-  char key_str[] = "AAAAAAAAA";
-  htpa_bytes key;
-  key.bytes = (unsigned char *) key_str;
-  key.len = strlen(key_str);
-  htpa_bytes *key_ptr = &key;
+  htpa_bytes plaintext; htpa_bytes *plaintext_ptr = &plaintext;
+  htpa_bytes key; htpa_bytes *key_ptr = &key;
 
-  printf("Key "); fprint_bytes_hex(stdout, key_ptr);
-  printf("Key "); fprint_bytes_str(stdout, key_ptr);
+  if(argc <= 2) {
+    printf("Usage: %s filename key [rounds]\n\n", argv[0]);
+    exit(EXIT_FAILURE);
+  }
 
-  // char plaintext_str[] = "Hello and goodbye, my friend. J! Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur convallis pulvinar nisl vel tincidunt. Ut velit erat, semper at dapibus at, sollicitudin sit amet sem. Cras fringilla arcu augue. Etiam ipsum leo, sagittis aliquet commodo vitae, rutrum sit amet magna. Nunc eget lectus nunc, at varius augue. Nam sodales condimentum libero non imperdiet. Nullam in tellus aliquet libero aliquam venenatis. Praesent imperdiet placerat mauris, suscipit vestibulum massa fringilla et. Fusce at sapien egestas turpis porttitor lobortis. Sed fermentum sagittis tortor quis blandit. Maecenas sed diam quam. Aliquam nisi massa, vestibulum eu fringilla sed, consectetur elementum eros. Ut gravida lectus a eros vestibulum at vestibulum erat molestie.";
-  // char plaintext_str[] = "Hello and goodbye, my friend. J!";
-  char plaintext_str[] = "Hello and goodbye, my friend.";
-  // char plaintext_str[] = "AAA";
-  // char plaintext_str[] = {0x41, 0x41, 0x41, 0x41};
-  htpa_bytes plaintext;
+  FILE *fp = fopen(argv[1], "rb");
+  if(fp) {
+    debug_print(3, "Opened file \"%s\" for plaintext\n", argv[1]);
+    char buf[CHUNK];
+    size_t bytes_read;
 
-  plaintext.bytes = (unsigned char *) plaintext_str;
-  plaintext.len = strlen(plaintext_str);
-  // plaintext.len = 4;
-  htpa_bytes *plaintext_ptr = &plaintext;
+    bytes_read = fread(&buf, sizeof(char), CHUNK, fp);
+    debug_print(2, "Read %i bytes from file %s\n", (int) bytes_read, argv[1]);
+
+    plaintext.bytes = (unsigned char *) calloc(bytes_read, sizeof(unsigned char));
+    memcpy(plaintext.bytes, buf, bytes_read);
+    plaintext.len = bytes_read;
+
+    fclose(fp);
+  } else {
+    debug_print(3, "Argument is not a file or cannot read, assuming \"%s\" to be plaintext\n", argv[1]);
+    plaintext.bytes = (unsigned char *) calloc(strlen(argv[1]), sizeof(unsigned char));
+    memcpy(plaintext.bytes, argv[1], strlen(argv[1]));
+    plaintext.len = strlen(argv[1]);
+  }
+
+  key.bytes = (unsigned char *) calloc(KEY_BYTE_LEN, sizeof(unsigned char));
+  memcpy(key.bytes, argv[2], strlen(argv[2]));
+  key.len = KEY_BYTE_LEN;
+
+  printf("HTPA Key "); fprint_bytes_hex(stdout, key_ptr);
+  printf("HTPA Key "); fprint_bytes_str(stdout, key_ptr);
 
   printf("Plaintext "); fprint_bytes_hex(stdout, plaintext_ptr);
   printf("Plaintext "); fprint_bytes_str(stdout, plaintext_ptr);
@@ -45,11 +60,14 @@ int main(int argc, char const *argv[]) {
 
 
   free_blocks_array(plaintext_blocks);
+  free(plaintext.bytes);
+  free(key.bytes);
   exit(EXIT_SUCCESS);
 }
 
 void printf_blocks_array(htpa_blocks_array * array_ptr) {
-  for (int i = 0; i < array_ptr->size; ++i)
+  int i;
+  for (i = 0; i < array_ptr->size; ++i)
   {
     printf("Block %i: ", i+1); fprint_bytes_str(stdout, array_ptr->blocks[i]);
     printf("Block %i: ", i+1); fprint_bytes_hex(stdout, array_ptr->blocks[i]);
@@ -73,9 +91,10 @@ void fprint_bytes_str(FILE *stream, htpa_bytes * bytes_ptr) {
 char * get_bytes_hex(htpa_bytes * bytes_ptr) {
   int strsize = bytes_ptr->len * 3 - 1 + 1;
   char * str = (char *) malloc(strsize); // -1 for missing space and +1 for str nullbyte
-  for (int i = 0; i < strsize; ++i) { str[i] = '\0'; } // initialize string space of null
+  int i;
+  for (i = 0; i < strsize; ++i) { str[i] = '\0'; } // initialize string space of null
 
-  for (int i = 0; i < bytes_ptr->len; ++i) {
+  for (i = 0; i < bytes_ptr->len; ++i) {
     if (i > 0) sprintf(str, "%s ", str);
     sprintf(str, "%s%02X", str, bytes_ptr->bytes[i]);
   }
@@ -85,9 +104,10 @@ char * get_bytes_hex(htpa_bytes * bytes_ptr) {
 char * get_bytes_str(htpa_bytes * bytes_ptr) {
   int strsize = bytes_ptr->len + 1;
   char * str = (char *) malloc(strsize);
-  for (int i = 0; i < strsize; ++i) { str[i] = '\0'; } // initialize string space of null
+  int i;
+  for (i = 0; i < strsize; ++i) { str[i] = '\0'; } // initialize string space of null
 
-  for (int i = 0; i < bytes_ptr->len; ++i) {
+  for (i = 0; i < bytes_ptr->len; ++i) {
     sprintf(str, "%s%c", str, (char) bytes_ptr->bytes[i]);
   }
 
@@ -100,7 +120,8 @@ int calc_bits(htpa_bytes * bytes_ptr) {
 
 int calc_blocks_for_bytes(htpa_bytes * bytes_ptr) {
   int blocks = 0;
-  for (int i = 0; i < bytes_ptr->len; ++i) {
+  int i;
+  for (i = 0; i < bytes_ptr->len; ++i) {
     if (i % BLOCK_BYTE_LEN == 0) {
       blocks++;
     }
@@ -124,7 +145,8 @@ htpa_blocks_array * split_into_blocks(htpa_bytes * bytes_ptr) {
   byte_streams_array->size = blocks_total_num;
   byte_streams_array->blocks = (htpa_bytes **) malloc(sizeof(htpa_bytes *) * blocks_total_num);
   debug_print(4, "Allocated memory for %i block pointers for blocks array struct.\n", blocks_total_num);
-  for (int i = 0; i < blocks_total_num; ++i)
+  int i;
+  for (i = 0; i < blocks_total_num; ++i)
   {
     byte_streams_array->blocks[i] = (htpa_bytes *) malloc(sizeof(htpa_bytes));
     byte_streams_array->blocks[i]->len = BLOCK_BYTE_LEN;
@@ -134,7 +156,7 @@ htpa_blocks_array * split_into_blocks(htpa_bytes * bytes_ptr) {
   }
 
   // iterate through the long bytes_ptr byte stream and break it into blocks
-  for (int i = 0; i < bytes_ptr->len; ++i) {
+  for (i = 0; i < bytes_ptr->len; ++i) {
     int remaining_bytes = bytes_ptr->len - i;
     if (i % BLOCK_BYTE_LEN == 0) {
       ++block_num;
@@ -164,7 +186,8 @@ htpa_blocks_array * split_into_blocks(htpa_bytes * bytes_ptr) {
 
 void free_blocks_array(htpa_blocks_array *array_ptr) {
   debug_print(3, "Deallocating memory for blocks array struct of size %i.\n", array_ptr->size);
-  for (int i = 0; i < array_ptr->size; ++i)
+  int i;
+  for (i = 0; i < array_ptr->size; ++i)
   {
     free(array_ptr->blocks[i]->bytes); array_ptr->blocks[i]->bytes = NULL;
     free(array_ptr->blocks[i]); array_ptr->blocks[i] = NULL;
