@@ -363,5 +363,5 @@ void htpa_round_function(htpa_bytes *block_half, htpa_bytes *round_key) {
   for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
     block_half->bytes[i] = subbyte(block_half->bytes[i]);
   }
-  debug_print(3, "Substituded bytes!%s", "\n");
+  debug_print(3, "Substituted bytes!%s", "\n");
 }
