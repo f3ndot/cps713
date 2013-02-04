@@ -12,7 +12,7 @@
   (byte & 0x08 ? 1 : 0), \
   (byte & 0x04 ? 1 : 0), \
   (byte & 0x02 ? 1 : 0), \
-  (byte & 0x01 ? 1 : 0) 
+  (byte & 0x01 ? 1 : 0)
 
 
 int main(int argc, char **argv) {
