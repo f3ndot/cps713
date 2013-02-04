@@ -82,6 +82,7 @@ int main(int argc, char **argv) {
 
 
 htpa_bytes * htpa_algorithm(htpa_bytes *ciphertext, htpa_bytes *plaintext, htpa_bytes *key, int rounds) {
+  int i; int j; char str_buf[1024] = { 0x00 };
 
   debug_print(4, "HTPA Block Length:       %i bytes (%i bits)\n", BLOCK_BYTE_LEN, BLOCK_LEN);
   debug_print(4, "HTPA Block-Half Length:  %i bytes (%i bits)\n", BLOCK_BYTE_HALF_LEN, BLOCK_HALF_LEN);
@@ -91,6 +92,42 @@ htpa_bytes * htpa_algorithm(htpa_bytes *ciphertext, htpa_bytes *plaintext, htpa_
   printf("%i Rounds chosen for HTPA encipherment process\n", rounds);
   printf("HTPA Key   "); fprint_bytes_hex(stdout, key);
   printf("HTPA Key   "); fprint_bytes_str(stdout, key);
+
+
+  unsigned char str[KEY_BYTE_LEN];
+  unsigned char str2[ROUND_BYTE_KEY_LEN];
+
+  for (i = 0; i < KEY_BYTE_LEN; ++i) {
+    str[i] = key->bytes[i];
+  }
+
+  for (i = 0; i < ROUND_BYTE_KEY_LEN; ++i) {
+    debug_print(4, "START:    "BYTETOBINARYPATTERN" \n", BYTETOBINARY(str[i]));
+
+    // shift-left entire byte by i bits because of previous byte taking i bits of this one
+    str[i] = str[i] << i;
+    debug_print(4, "SHIFT LF: "BYTETOBINARYPATTERN" (Shift Left %i Bits)\n", BYTETOBINARY(str[i]), i);
+
+    // Remove/Mask out the last i+1 bits (i because of previous + 1 new bit to be removed)
+    str[i] = str[i] >> i+1;
+    str[i] = str[i] << i+1;
+    debug_print(4, "REM LAST: "BYTETOBINARYPATTERN" (Moved Right-Left %i Bits)\n", BYTETOBINARY(str[i]), (i+1));
+
+    // shift next byte's first-most i+1 bits to the right-most (position 8)
+    unsigned char temp = str[i+1] >> (8 - (i+1));
+    debug_print(4, "NXT SHFT: "BYTETOBINARYPATTERN" (Shift Right %i Bits)\n", BYTETOBINARY(temp), (8 - (i+1)));
+
+    // combine/bitwise-OR the result
+    str2[i] = str[i] | temp;
+    debug_print(4, "BOR BOTH: "BYTETOBINARYPATTERN" \n", BYTETOBINARY(str2[i]));
+    debug_print(4, "---------------%s", "\n");
+  }
+
+  for (i = 0; i < ROUND_BYTE_KEY_LEN; ++i) {
+    sprintf(str_buf, "%s0x%.2X ", str_buf, str2[i]);
+  }
+  debug_print(2, "Key Schedule: %s\n", str_buf);
+
 
   printf("Plaintext  "); fprint_bytes_hex(stdout, plaintext);
   printf("Plaintext  "); fprint_bytes_str(stdout, plaintext);
@@ -104,7 +141,6 @@ htpa_bytes * htpa_algorithm(htpa_bytes *ciphertext, htpa_bytes *plaintext, htpa_
   debug_print(3, "Allocated memory for for %i bytes of ciphertext\n", ciphertext->len);
   unsigned char *cursor = ciphertext->bytes;
 
-  int i; int j;
   for (i = 0; i < plaintext_blocks->size; ++i) {
     debug_print(1, "Block %i of %i: Encipherment algorithm starting!\n", i+1, plaintext_blocks->size);
     for (j = 0; j < rounds; ++j) {
