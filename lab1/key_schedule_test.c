@@ -39,23 +39,17 @@ int main(int argc, char **argv) {
   for (i = 0; i < 8; ++i) {
     printf ("START:    "BYTETOBINARYPATTERN" \n", BYTETOBINARY(str[i]));
 
+    // shift-left entire byte by i bits because of previous byte taking i bits of this one
     str[i] = str[i] << i;
     printf ("SHIFT LF: "BYTETOBINARYPATTERN" (Shift Left %i Bits)\n", BYTETOBINARY(str[i]), i);
 
-    // Remove/Mask out the last i+1 bits (amount relative to char position in string)
+    // Remove/Mask out the last i+1 bits (i because of previous + 1 new bit to be removed)
     str[i] = str[i] >> i+1;
     str[i] = str[i] << i+1;
     printf ("REM LAST: "BYTETOBINARYPATTERN" (Moved Right-Left %i Bits)\n", BYTETOBINARY(str[i]), (i+1));
 
-    // remove the next byte's 2nd-8th bits (leaving 1st bit intact)
-    unsigned char temp;
-    printf ("NXT STRT: "BYTETOBINARYPATTERN" \n", BYTETOBINARY(str[i+1]));
-    temp = str[i+1] >> (8 - (i+1)); // mask is 10000000
-    temp = temp << (8 - (i+1)); // mask is 10000000
-    printf ("NXT REMF: "BYTETOBINARYPATTERN" (Moved Right-Left %i Bits)\n", BYTETOBINARY(temp), (8 - (i+1)));
-
-    // shift next byte's 1st-bit it 7 bits to the right (position 8)
-    temp = temp >> (8 - (i+1));
+    // shift next byte's first-most i+1 bits to the right-most (position 8)
+    unsigned char temp = str[i+1] >> (8 - (i+1));
     printf ("NXT SHFT: "BYTETOBINARYPATTERN" (Shift Right %i Bits)\n", BYTETOBINARY(temp), (8 - (i+1)));
 
     // combine/bitwise-OR the result
