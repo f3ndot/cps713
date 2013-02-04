@@ -81,15 +81,3 @@ int main(int argc, char **argv) {
 
 // 01001101 01111001 01001011 01100101 01111001 01000111 01101111 01101111 01100100
 // 01001100 11110001 00101011 00100111 10001000 11011011 10110111 01100100
-
-// 01001100 111100XX 01001011 01100101 01111001 01000111 01101111 01101111 01100100
-
-
-// next I would allocate some memory for a new string, and begin writing to it 1 byte at a time
-// so str2[x]=str[x]
-// then, the only relevant info to stripping off that last bit is the first bit of the next byte
-// so, And the next byte by 10000000 (0x80) and then shift it right 7 bits.
-// then, you'll have a value representing the highest order bit of the next byte, which you will place into the lowest order bit field of the new byte
-// so after you strip out the lowest-order bit from str in the first place which you have already done: str2[x]=str[x]
-// BYTE BitFromNextByteToMoveToPrevious=((str[x + 1] & 0x80) >> 7);
-// and then just str2[x] |= BitFromNextByteToMoveToPrevious;
