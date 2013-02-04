@@ -43,21 +43,6 @@ void get_bits_on_bytes(int *bits, int *positions, unsigned char *bytes, int bits
   }
 }
 
-unsigned char set_bits_on_byte(unsigned char byte, int *positions, int *bits) {
-  int i;
-  unsigned char new_byte = 0x00;
-  for (i = 0; i < 8; ++i) {
-    int new_bit = bits[i] << positions[i];
-    if((new_byte & new_bit)) {
-      fprintf(stderr, "ERROR: Bit already set. Position array is malformed?\n");
-      exit(EXIT_FAILURE);
-    }
-    new_byte |= new_bit;
-  }
-
-  return new_byte;
-}
-
 int main(int argc, char **argv) {
   int i;
 
