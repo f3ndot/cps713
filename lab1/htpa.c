@@ -332,8 +332,7 @@ void htpa_final_round(htpa_bytes *block) {
   unsigned char * right_index = left_index + BLOCK_BYTE_HALF_LEN;
 
   htpa_bytes round_key;      round_key.len      = ROUND_BYTE_KEY_LEN;
-  // round_key.bytes = (unsigned char *) calloc(ROUND_BYTE_KEY_LEN,  sizeof(unsigned char));
-  round_key.bytes = (unsigned char *) "AAAAAAAA";
+  round_key.bytes = (unsigned char *) calloc(ROUND_BYTE_KEY_LEN,  sizeof(unsigned char));
 
   htpa_bytes tmp_right_side; tmp_right_side.len = BLOCK_BYTE_HALF_LEN;
   tmp_right_side.bytes = (unsigned char *) calloc(BLOCK_BYTE_HALF_LEN, sizeof(unsigned char));
@@ -350,7 +349,7 @@ void htpa_final_round(htpa_bytes *block) {
   memcpy(right_index, tmp_right_side.bytes, BLOCK_BYTE_HALF_LEN);
 
   free(tmp_right_side.bytes);
-  // free(round_key.bytes);
+  free(round_key.bytes);
   debug_print(4, "Freed byte stream structs for round key%s", "\n");
 }
 
