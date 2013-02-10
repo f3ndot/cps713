@@ -91,15 +91,7 @@ int main(int argc, char **argv) {
   argc -= optind;
   argv += optind;
 
-  // ensure required options exist for AES mode
-  if(algorithm_mode == MODE_AES_CBC) {
-    if((do_encrypt == 1 && do_decrypt == 1) || (do_encrypt != 1 && do_decrypt != 1)) {
-      fprintf(stderr, "ERROR: You must specify either --encrypt *OR* --decrypt, not both or neither\n");
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if(algorithm_mode == MODE_NOT_CHOSEN) {
+  if(argc < 3) {
     print_help_message(filename);
     exit(EXIT_FAILURE);
   }
@@ -116,15 +108,22 @@ int main(int argc, char **argv) {
     exit(EXIT_SUCCESS);
   }
 
+  if(algorithm_mode == MODE_NOT_CHOSEN) {
+    print_help_message(filename);
+    exit(EXIT_FAILURE);
+  }
 
   printf("\nCPS713 Lab 1 Program v.1.0\n");
   printf("by Justin B. & Jonathan K.\n\n");
 
-  if(algorithm_mode == MODE_HTPA) {
-    printf("HTPA Algorithm v.1.0 Selected\n");
-    printf("%i Rounds Chosen\n", htpa_rounds);
-
-  } else if(algorithm_mode == MODE_AES_CBC) {
+  /********************************************
+  * AES ALGORITHM
+  ********************************************/
+  if(algorithm_mode == MODE_AES_CBC) {
+    if((do_encrypt == 1 && do_decrypt == 1) || (do_encrypt != 1 && do_decrypt != 1)) {
+      fprintf(stderr, "ERROR: You must specify either --encrypt *OR* --decrypt, not both or neither\n");
+      exit(EXIT_FAILURE);
+    }
     printf("OpenSSL AES-256-CBC Algorithm Selected\n");
     if(do_encrypt == 1) {
       puts("Encryption Mode Chosen");
@@ -132,70 +131,67 @@ int main(int argc, char **argv) {
     if(do_decrypt == 1) {
       puts("Decryption Mode Chosen");
     }
+
+    EVP_CIPHER_CTX ctx;
+
   }
 
-  exit(EXIT_SUCCESS);
+  /********************************************
+  * HTPA ALGORITHM
+  ********************************************/
+  if(algorithm_mode == MODE_HTPA) {
+    printf("HTPA Algorithm v.1.0 Selected\n");
+    printf("%i Rounds Chosen\n", htpa_rounds);
 
-  // create the structs for the algorithm
-  htpa_bytes plaintext;  htpa_bytes *plaintext_ptr  = &plaintext;
-  htpa_bytes key;        htpa_bytes *key_ptr        = &key;
-  htpa_bytes ciphertext; htpa_bytes *ciphertext_ptr = &ciphertext;
-  htpa_bytes decrypted;  htpa_bytes *decrypted_ptr  = &decrypted;
+    // create the structs for the algorithm
+    htpa_bytes plaintext;  htpa_bytes *plaintext_ptr  = &plaintext;
+    htpa_bytes key;        htpa_bytes *key_ptr        = &key;
+    htpa_bytes ciphertext; htpa_bytes *ciphertext_ptr = &ciphertext;
+    htpa_bytes decrypted;  htpa_bytes *decrypted_ptr  = &decrypted;
 
-  // ensure there are the right arugments
-  if(argc <= 2) {
-    printf("Usage: %s filename_or_message key [rounds]\n\n", filename);
-    exit(EXIT_FAILURE);
+    // attempt to open a file, if error assume to be message string
+    FILE *fp = fopen(argv[0], "rb");
+    if(fp) {
+      debug_print(3, "Opened file \"%s\" for plaintext\n", argv[0]);
+      char buf[CHUNK];
+      size_t bytes_read;
+
+      bytes_read = fread(&buf, sizeof(char), CHUNK, fp);
+      debug_print(2, "Read %i bytes from file %s\n", (int) bytes_read, argv[0]);
+
+      plaintext.bytes = (unsigned char *) calloc(bytes_read, sizeof(unsigned char));
+      memcpy(plaintext.bytes, buf, bytes_read);
+      plaintext.len = bytes_read;
+
+      fclose(fp);
+    } else {
+      debug_print(3, "Argument is not a file or cannot read, assuming \"%s\" to be plaintext\n", argv[0]);
+      plaintext.bytes = (unsigned char *) calloc(strlen(argv[0]), sizeof(unsigned char));
+      memcpy(plaintext.bytes, argv[0], strlen(argv[0]));
+      plaintext.len = strlen(argv[0]);
+    }
+
+    // allocate memory for the key
+    key.bytes = (unsigned char *) calloc(KEY_BYTE_LEN, sizeof(unsigned char));
+    memcpy(key.bytes, argv[1], strlen(argv[1]));
+    key.len = KEY_BYTE_LEN;
+
+    // perform the HTPA algorithm and save to a file
+    htpa_algorithm(ciphertext_ptr, plaintext_ptr, key_ptr, htpa_rounds);
+
+    // open a file for ciphertext output saving
+    FILE *ofp = fopen(argv[2], "wb");
+    if(ofp) {
+      fwrite(ciphertext_ptr->bytes, ciphertext_ptr->len, 1, ofp);
+      fclose(ofp);
+    }
+
+    // free memory used in byte strings
+    free(ciphertext_ptr->bytes); ciphertext_ptr->bytes = NULL;
+    free(key_ptr->bytes); key_ptr->bytes = NULL;
+    free(plaintext_ptr->bytes); plaintext_ptr->bytes = NULL;
   }
 
-  printf("ENCRYPTING:\n----------\n");
-
-  // attempt to open a file, if error assume to be message string
-  FILE *fp = fopen(argv[1], "rb");
-  if(fp) {
-    debug_print(3, "Opened file \"%s\" for plaintext\n", argv[1]);
-    char buf[CHUNK];
-    size_t bytes_read;
-
-    bytes_read = fread(&buf, sizeof(char), CHUNK, fp);
-    debug_print(2, "Read %i bytes from file %s\n", (int) bytes_read, argv[1]);
-
-    plaintext.bytes = (unsigned char *) calloc(bytes_read, sizeof(unsigned char));
-    memcpy(plaintext.bytes, buf, bytes_read);
-    plaintext.len = bytes_read;
-
-    fclose(fp);
-  } else {
-    debug_print(3, "Argument is not a file or cannot read, assuming \"%s\" to be plaintext\n", argv[1]);
-    plaintext.bytes = (unsigned char *) calloc(strlen(argv[1]), sizeof(unsigned char));
-    memcpy(plaintext.bytes, argv[1], strlen(argv[1]));
-    plaintext.len = strlen(argv[1]);
-  }
-
-  // if a rounds parameter is sent, update variable
-  if(argc >= 4) {
-    htpa_rounds = atoi(argv[3]);
-  }
-
-  // allocate memory for the key
-  key.bytes = (unsigned char *) calloc(KEY_BYTE_LEN, sizeof(unsigned char));
-  memcpy(key.bytes, argv[2], strlen(argv[2]));
-  key.len = KEY_BYTE_LEN;
-
-  // perform the HTPA algorithm and save to a file
-  htpa_algorithm(ciphertext_ptr, plaintext_ptr, key_ptr, htpa_rounds);
-
-  printf("\n============================================\n\n");
-  printf("DECRYPTING:\n----------\n");
-
-  htpa_algorithm(decrypted_ptr, ciphertext_ptr, key_ptr, htpa_rounds);
-
-
-  // free memory used in byte strings
-  free(ciphertext_ptr->bytes); ciphertext_ptr->bytes = NULL;
-  free(decrypted_ptr->bytes); decrypted_ptr->bytes = NULL;
-  free(key_ptr->bytes); key_ptr->bytes = NULL;
-  free(plaintext_ptr->bytes); plaintext_ptr->bytes = NULL;
   exit(EXIT_SUCCESS);
 }
 
@@ -208,7 +204,6 @@ htpa_bytes * htpa_algorithm(htpa_bytes *ciphertext, htpa_bytes *plaintext, htpa_
   debug_print(4, "HTPA Key Length:         %i bytes (%i bits)\n", KEY_BYTE_LEN, KEY_LEN);
   debug_print(4, "HTPA Round Key Length:   %i bytes (%i bits)\n", ROUND_BYTE_KEY_LEN, ROUND_KEY_LEN);
 
-  printf("%i Rounds chosen for HTPA encipherment process\n", rounds);
   printf("HTPA Key   "); fprint_bytes_hex(stdout, key);
   printf("HTPA Key   "); fprint_bytes_str(stdout, key);
 
@@ -531,7 +526,7 @@ void print_version_message() {
 }
 
 void print_help_message(char *name) {
-  printf("Usage: %s [options] filename_or_message key\n\n", name);
+  printf("Usage: %s [options] filename_or_message key output_file\n\n", name);
 
   printf("CPS713 Lab1 Program v.1.0\n");
   printf("by Justin B. & Jonathan K.\n\n");
