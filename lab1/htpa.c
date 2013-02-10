@@ -6,16 +6,135 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <openssl/evp.h>
 #include "htpa.h"
 
 
 int main(int argc, char **argv) {
 
-  printf("HTPA Algorithm v.1.0\n");
+  // rounds default
+  int htpa_rounds = 8;
+
+
+  // longopts stuff
+  int c; // option char
+  int do_help, do_version, do_encrypt, do_decrypt, do_rounds; // flag vars
+  int algorithm_mode = MODE_NOT_CHOSEN;
+  char *filename = argv[0];
+
+  struct option longopts[] = {
+    { "algorithm",     required_argument,    NULL,         'a' },
+    { "encrypt",       no_argument,          &do_encrypt,  'e' },
+    { "decrypt",       no_argument,          &do_decrypt,  'd' },
+    { "rounds",        required_argument,    &do_rounds,   'r' },
+    { "help",          no_argument,          &do_help,     1   },
+    { "version",       no_argument,          &do_version,  1   },
+    { 0, 0, 0, 0 }
+  };
+
+  while((c = getopt_long(argc, argv, "a:edr:hv", longopts, NULL)) != -1 ) {
+    switch(c) {
+    case 'a':
+      // set algothim mode
+      if(strcmp(optarg, "htpa") == 0) {
+        algorithm_mode = MODE_HTPA;
+      } else if(strcmp(optarg, "aes") == 0) {
+        algorithm_mode = MODE_AES_CBC;
+      } else {
+        print_help_message(argv[0]);
+        exit(EXIT_FAILURE);
+      }
+      break;
+    case 'e':
+      if(algorithm_mode != MODE_AES_CBC) {
+        fprintf(stderr, "WARNING: Ignoring --encrypt for HTPA.\n");
+      } else {
+        do_encrypt = 1;
+      }
+      break;
+    case 'd':
+      if(algorithm_mode != MODE_AES_CBC) {
+        fprintf(stderr, "WARNING: Ignoring --decrypt for HTPA.\n");
+      } else {
+        do_decrypt = 1;
+      }
+      break;
+    case 'r':
+      if(algorithm_mode != MODE_HTPA) {
+        fprintf(stderr, "WARNING: Ignoring --rounds for AES.\n");
+      } else {
+        htpa_rounds = atoi(optarg);
+      }
+      break;
+    case 'h':
+      do_help = 1;
+      break;
+    case 'v':
+      do_version = 1;
+      break;
+    case 0:   /* getopt_long() sets a variable, just keep going */
+      break;
+  #if 0
+    case 1:
+      break;
+  #endif
+    case ':':
+    case '?':
+    default:
+      print_help_message(filename);
+      exit(EXIT_SUCCESS);
+      break;
+    }
+  }
+  argc -= optind;
+  argv += optind;
+
+  // ensure required options exist for AES mode
+  if(algorithm_mode == MODE_AES_CBC) {
+    if((do_encrypt == 1 && do_decrypt == 1) || (do_encrypt != 1 && do_decrypt != 1)) {
+      fprintf(stderr, "ERROR: You must/can specify either --encrypt *OR* --decrypt\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  if(algorithm_mode == MODE_NOT_CHOSEN) {
+    print_help_message(filename);
+    exit(EXIT_FAILURE);
+  }
+
+  // print help if flag
+  if(do_help == 1) {
+    print_help_message(filename);
+    exit(EXIT_SUCCESS);
+  }
+
+  // print version if flag
+  if(do_version == 1) {
+    print_version_message();
+    exit(EXIT_SUCCESS);
+  }
+
+
+  printf("\nCPS713 Lab 1 Program v.1.0\n");
   printf("by Justin B. & Jonathan K.\n\n");
 
-  // default rounds
-  int htpa_rounds = 8;
+  if(algorithm_mode == MODE_HTPA) {
+    printf("HTPA Algorithm v.1.0 Selected\n");
+    printf("%i Rounds Chosen\n", htpa_rounds);
+
+  } else if(algorithm_mode == MODE_AES_CBC) {
+    printf("OpenSSL AES-256-CBC Algorithm Selected\n");
+    if(do_encrypt == 1) {
+      puts("Encryption Mode Chosen");
+    }
+    if(do_decrypt == 1) {
+      puts("Decryption Mode Chosen");
+    }
+  }
+
+  exit(EXIT_SUCCESS);
 
   // create the structs for the algorithm
   htpa_bytes plaintext;  htpa_bytes *plaintext_ptr  = &plaintext;
@@ -25,7 +144,7 @@ int main(int argc, char **argv) {
 
   // ensure there are the right arugments
   if(argc <= 2) {
-    printf("Usage: %s filename_or_message key [rounds]\n\n", argv[0]);
+    printf("Usage: %s filename_or_message key [rounds]\n\n", filename);
     exit(EXIT_FAILURE);
   }
 
@@ -399,4 +518,34 @@ void htpa_round_function(htpa_bytes *block_half, htpa_bytes *round_key) {
     block_half->bytes[i] = subbyte(block_half->bytes[i]);
   }
   debug_print(3, "Substituted bytes!%s", "\n");
+}
+
+void print_version_message() {
+  printf("CPS713 Lab 1 Program v.1.0\n");
+  printf("by Justin B. & Jonathan K.\n\n");
+
+  puts("Copyright (C) 2013 Justin Bull, Jonathan Kwan");
+  puts("License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>");
+  puts("This is free software: you are free to change and redistribute it.");
+  puts("There is NO WARRANTY, to the extent permitted by law.");
+}
+
+void print_help_message(char *name) {
+  printf("Usage: %s [options] filename_or_message key\n\n", name);
+
+  printf("CPS713 Lab1 Program v.1.0\n");
+  printf("by Justin B. & Jonathan K.\n\n");
+
+  puts("Options:\n");
+
+  puts(" -a, --algorithm [htpa|aes]   run the program using ALGO algorithm 'htpa' or 'aes'");
+  puts(" -e, --encrypt                encrypt the plaintext in filename_or_message (AES only)");
+  puts(" -d, --decrypt                decrypt the ciphertext in filename_or_message (AES only)");
+  puts(" -r, --rounds N               perform N rounds of ALGO (HTPA only)");
+  puts(" -h, --help                   display this help and exit");
+  puts(" -v, --version                display version information and exit\n");
+
+  puts("Options '-e' and '-d' contradict each other and at least one is required.\nIf both options are either present or missing, the program will exit.\n");
+
+  puts("Report bugs to: <cps713-lab1@justinbull.ca>");
 }

@@ -51,6 +51,7 @@ int main(int argc, char **argv) {
   unsigned char str[9] = "MyGodKey";
   get_bits_on_bytes(bit, pos, str, 64);
 
+  printf("Before Permutation: %s\n", str);
   printf("Before Permutation:\n");
   for (i = 0; i < 64; ++i) {
     if(i % 8 == 0 && i > 0) putchar('\n');

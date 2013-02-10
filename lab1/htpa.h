@@ -18,6 +18,10 @@
 #define ROUND_BYTE_KEY_LEN ((int) ROUND_KEY_LEN / CHAR_BIT)
 #define BLOCK_BYTE_HALF_LEN ((int) BLOCK_HALF_LEN / CHAR_BIT)
 
+#define MODE_NOT_CHOSEN 0
+#define MODE_HTPA 1
+#define MODE_AES_CBC 2
+
 #ifndef DEBUG_LEVEL
 #define DEBUG_LEVEL 1
 #endif
@@ -92,6 +96,9 @@ void htpa_round_function(htpa_bytes *block_half, htpa_bytes *round_key); // perf
                                 __LINE__, __func__, level, __VA_ARGS__); fflush(stderr); } while (0)
 
 
+void print_help_message(char *name);
+void print_version_message();
+
 #define BYTETOBINARYPATTERN "%d%d%d%d%d%d%d%d"
 #define BYTETOBINARY(byte)  \
   (byte & 0x80 ? 1 : 0), \
@@ -101,6 +108,6 @@ void htpa_round_function(htpa_bytes *block_half, htpa_bytes *round_key); // perf
   (byte & 0x08 ? 1 : 0), \
   (byte & 0x04 ? 1 : 0), \
   (byte & 0x02 ? 1 : 0), \
-  (byte & 0x01 ? 1 : 0) 
+  (byte & 0x01 ? 1 : 0)
 
 #endif /* HTPA_H */
