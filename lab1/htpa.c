@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
   // ensure required options exist for AES mode
   if(algorithm_mode == MODE_AES_CBC) {
     if((do_encrypt == 1 && do_decrypt == 1) || (do_encrypt != 1 && do_decrypt != 1)) {
-      fprintf(stderr, "ERROR: You must/can specify either --encrypt *OR* --decrypt\n");
+      fprintf(stderr, "ERROR: You must specify either --encrypt *OR* --decrypt, not both or neither\n");
       exit(EXIT_FAILURE);
     }
   }
