@@ -82,6 +82,7 @@ int main(int argc, char **argv) {
       if(algorithm_mode != MODE_AES_CBC) {
         fprintf(stderr, "WARNING: Ignoring --iv for HTPA.\n");
       } else {
+        do_iv = 1;
         int len = strlen(optarg);
         if(len > 16) {
         memcpy(iv_bytes, optarg, 16);
@@ -161,151 +162,92 @@ int main(int argc, char **argv) {
     unsigned char inbuf[CHUNK];
     unsigned char outbuf[CHUNK];
     int outlen, tmplen;
-    int n;
 
     // allocate memory for the key
-    // int len = strlen(argv[1]);
-    // if(len > 32) {
-    //   memcpy(key_bytes, argv[1], 32);
-    // } else {
-    //   memcpy(key_bytes, argv[1], strlen(argv[1]));
-    // }
-
-    for (i = 0; i < CHUNK; ++i)
-    {
-      inbuf[i] = (unsigned char) 'A';
+    // note iv is done in getopts
+    int len = strlen(argv[1]);
+    if(len > 32) {
+      memcpy(key_bytes, argv[1], 32);
+    } else {
+      memcpy(key_bytes, argv[1], strlen(argv[1]));
     }
+
+    // fill with nulls for testing. arbitrarily large null buffer
     for (i = 0; i < CHUNK; ++i)
     {
       outbuf[i] = (unsigned char) 0x00;
+      inbuf[i] = (unsigned char) 0x00;
     }
 
-    printf("PLAINTEXT:\n");
-    for (i = 0; i < 128; ++i)
-    {
-      putchar((char) inbuf[i]);
+    // determine if its a file or small plaintext string
+    FILE *fp = fopen(argv[0], "rb");
+    size_t bytes_read;
+    if(fp) {
+      char buf[CHUNK];
+      debug_print(3, "Opened file \"%s\" for plaintext\n", argv[0]);
+
+      bytes_read = fread(&buf, sizeof(char), CHUNK, fp);
+      debug_print(2, "Read %i bytes from file %s\n", (int) bytes_read, argv[0]);
+
+      memcpy(inbuf, buf, bytes_read);
+
+      fclose(fp);
+    } else {
+      debug_print(3, "Argument is not a file or cannot read, assuming \"%s\" to be plaintext\n", argv[0]);
+      memcpy(inbuf, argv[0], strlen(argv[0]));
     }
-    putchar('\n');
-    for (i = 0; i < 128; ++i)
-    {
-      printf("%.2X ", inbuf[i]);
-    }
-
-    printf("\n--------------------------------------\n");
 
 
-    // EVP_CIPHER_CTX *ctx;
 
-    // printf("%i\n\n",EVP_MAX_IV_LENGTH);
-    // exit(EXIT_SUCCESS);
-
-    /* This uses the OpenSSL PRNG .  See Recipe  11.9 */
-    RAND_bytes(key_bytes, EVP_MAX_KEY_LENGTH);
-    RAND_bytes(iv_bytes, EVP_MAX_IV_LENGTH);
-
-    // declar cipher context
+    // OpenSSL cipher context allocs and stuff
     EVP_CIPHER_CTX ctx;
-    EVP_CIPHER_CTX de_ctx;
     EVP_CIPHER_CTX_init(&ctx);
-    EVP_CIPHER_CTX_init(&de_ctx);
 
-    EVP_EncryptInit_ex(&ctx, EVP_aes_256_cbc(), NULL, key_bytes, iv_bytes);
-    EVP_DecryptInit_ex(&de_ctx, EVP_aes_256_cbc(), NULL, key_bytes, iv_bytes);
+    // Encrypt mode:
+    if(do_encrypt == 1) {
+      EVP_EncryptInit_ex(&ctx, EVP_aes_256_cbc(), NULL, key_bytes, iv_bytes);
 
-    // while(1) {
       if(!EVP_EncryptUpdate(&ctx, outbuf, &outlen, inbuf, 128)) {
         fprintf(stderr, "EVP_EncryptUpdate() FAILED\n");
         exit(EXIT_FAILURE);
       }
-    // }
 
-    printf("DURING BLOCK UPDATE:\n");
-    for (i = 0; i < outlen; ++i)
-    {
-      putchar((char) outbuf[i]);
-    }
-    putchar('\n');
-    for (i = 0; i < outlen; ++i)
-    {
-      printf("%.2X ", outbuf[i]);
+      if(!EVP_EncryptFinal_ex(&ctx, outbuf + outlen, &tmplen)) {
+        fprintf(stderr, "EVP_EncryptFinal_ex() FAILED\n");
+        exit(EXIT_FAILURE);
+      }
+      outlen += tmplen;
     }
 
+    // Decrypt mode:
+    if(do_decrypt == 1) {
+      EVP_DecryptInit_ex(&ctx, EVP_aes_256_cbc(), NULL, key_bytes, iv_bytes);
 
-    printf("\n--------------------------------------\n");
-
-
-
-    if(!EVP_EncryptFinal_ex(&ctx, outbuf + outlen, &tmplen)) {
-      fprintf(stderr, "EVP_EncryptFinal_ex() FAILED\n");
-      exit(EXIT_FAILURE);
-    }
-    outlen += tmplen;
-
-
-    printf("FINAL BLOCK STUFF %i:\n", outlen);
-    for (i = 0; i < outlen; ++i)
-    {
-      putchar((char) outbuf[i]);
-    }
-    putchar('\n');
-    for (i = 0; i < outlen; ++i)
-    {
-      printf("%.2X ", outbuf[i]);
-    }
-
-    printf("\n--------------------------------------\n");
-
-
-
-    printf("DURING DECRYPT BLOCK UPDATE:\n");
-    // while(1) {
-      if(!EVP_DecryptUpdate(&de_ctx, inbuf, &n, outbuf, outlen)) {
+      if(!EVP_DecryptUpdate(&ctx, outbuf, &outlen, inbuf, bytes_read)) {
         fprintf(stderr, "EVP_DecryptUpdate() FAILED\n");
         exit(EXIT_FAILURE);
       }
-    // }
 
-    for (i = 0; i < n; ++i)
-    {
-      putchar((char) inbuf[i]);
-    }
-    putchar('\n');
-    for (i = 0; i < n; ++i)
-    {
-      printf("%.2X ", inbuf[i]);
+      if(!EVP_DecryptFinal_ex(&ctx, outbuf + outlen, &tmplen)) {
+        fprintf(stderr, "EVP_DecryptFinal_ex() FAILED\n");
+        exit(EXIT_FAILURE);
+      }
+      outlen += tmplen;
+
     }
 
-    printf("\n--------------------------------------\n");
-
-
-    if(!EVP_DecryptFinal_ex(&de_ctx, inbuf + n, &tmplen)) {
-      fprintf(stderr, "EVP_DecryptFinal_ex() FAILED\n");
-      exit(EXIT_FAILURE);
-    }
-    n += tmplen;
-
-    for (i = 0; i < n; ++i)
-    {
-      putchar((char) inbuf[i]);
-    }
-    putchar('\n');
-    for (i = 0; i < n; ++i)
-    {
-      printf("%.2X ", inbuf[i]);
-    }
-
-
-
-    // EVP_EncryptInit(&ctx, EVP_aes_256_cbc(), key, iv_bytes);
-    // EVP_EncryptUpdate(&ctx, out, &outlen1, in, sizeof(in));
-    // EVP_EncryptFinal(&ctx, out + outlen1, &outlen2);
-
-
+    // OpenSSL cipher context deallocs
     EVP_CIPHER_CTX_cleanup(&ctx);
-    EVP_CIPHER_CTX_cleanup(&de_ctx);
 
-
+    // open a file for ciphertext output saving
+    FILE *ofp = fopen(argv[2], "wb");
+    if(ofp) {
+      fwrite(outbuf, outlen, 1, ofp);
+      fclose(ofp);
+    }
+    printf("Done!\n");
   }
+
 
   /********************************************
   * HTPA ALGORITHM
