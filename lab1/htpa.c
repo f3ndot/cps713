@@ -1,3 +1,6 @@
+// Justin Bull 500355958
+// Jonathan Kwan 500342079
+
 #define DEBUG 1
 #define DEBUG_LEVEL 4
 #define DISABLE_STRING_PRINT 0
