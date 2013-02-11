@@ -40,17 +40,21 @@ int main(int argc, char **argv) {
     printf ("START:    "BYTETOBINARYPATTERN" \n", BYTETOBINARY(str[i]));
 
     // shift-left entire byte by i bits because of previous byte taking i bits of this one
-    str[i] = str[i] << i;
-    printf ("SHIFT LF: "BYTETOBINARYPATTERN" (Shift Left %i Bits)\n", BYTETOBINARY(str[i]), i);
-
-    // Remove/Mask out the last i+1 bits (i because of previous + 1 new bit to be removed)
-    str[i] = str[i] >> i+1;
     str[i] = str[i] << i+1;
-    printf ("REM LAST: "BYTETOBINARYPATTERN" (Moved Right-Left %i Bits)\n", BYTETOBINARY(str[i]), (i+1));
+    printf ("SHIFT LF: "BYTETOBINARYPATTERN" (Shift Left %i Bits)\n", BYTETOBINARY(str[i]), i+1);
+
+    // // Remove/Mask out the last i+1 bits (i because of previous + 1 new bit to be removed)
+    // str[i] = str[i] >> i+1;
+    // str[i] = str[i] << i+1;
+    // printf ("REM LAST: "BYTETOBINARYPATTERN" (Moved Right-Left %i Bits)\n", BYTETOBINARY(str[i]), (i+1));
 
     // shift next byte's first-most i+1 bits to the right-most (position 8)
-    unsigned char temp = str[i+1] >> (8 - (i+1));
-    printf ("NXT SHFT: "BYTETOBINARYPATTERN" (Shift Right %i Bits)\n", BYTETOBINARY(temp), (8 - (i+1)));
+
+    // remove next byte's left-most bit
+    unsigned char temp = str[i+1] << 1;
+    printf ("NXT SHFT: "BYTETOBINARYPATTERN" (Shift Left %i Bits)\n", BYTETOBINARY(temp), 1);
+    temp = temp >> (7 - i);
+    printf ("NXT SHFT: "BYTETOBINARYPATTERN" (Shift Right %i Bits)\n", BYTETOBINARY(temp), (7 - i) );
 
     // combine/bitwise-OR the result
     str2[i] = str[i] | temp;
@@ -80,4 +84,8 @@ int main(int argc, char **argv) {
 }
 
 // 01001101 01111001 01001011 01100101 01111001 01000111 01101111 01101111 01100100
+// 10011011 11100110 01011110 01011111 00110001 11110111 11101111 10010000
+
+
+
 // 01001100 11110001 00101011 00100111 10001000 11011011 10110111 01100100

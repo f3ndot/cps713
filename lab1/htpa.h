@@ -12,11 +12,13 @@
 #define KEY_LEN 72
 #define ROUND_KEY_LEN 64
 #define BLOCK_HALF_LEN ((int) BLOCK_LEN / 2)
+#define ROUND_KEY_HALF_LEN ((int) ROUND_KEY_LEN / 2)
 
 #define BLOCK_BYTE_LEN ((int) BLOCK_LEN / CHAR_BIT)
 #define KEY_BYTE_LEN ((int) KEY_LEN / CHAR_BIT)
 #define ROUND_BYTE_KEY_LEN ((int) ROUND_KEY_LEN / CHAR_BIT)
 #define BLOCK_BYTE_HALF_LEN ((int) BLOCK_HALF_LEN / CHAR_BIT)
+#define ROUND_BYTE_KEY_HALF_LEN ((int) ROUND_BYTE_KEY_LEN / 2)
 
 #define MODE_NOT_CHOSEN 0
 #define MODE_HTPA 1
@@ -87,9 +89,16 @@ void pad_bytes(htpa_bytes *byte_stream); // reallocates space of byte stream to 
 void free_blocks_array(htpa_blocks_array *array); // Frees up memory of the blocks' byte arrays, the blocks themselves, and their array
 
 unsigned char subbyte(unsigned char); // uses sbox[256] to substitute a byte
-void htpa_round(htpa_bytes *block); // performs the HTPA iteration on the block
-void htpa_final_round(htpa_bytes *block); // final iteration does not swap the block halves
-void htpa_round_function(htpa_bytes *block_half, htpa_bytes *round_key); // performs the HTPA round function on the block_half
+void htpa_round(htpa_bytes *block, unsigned char *key_schedule); // performs the HTPA iteration on the block
+void htpa_final_round(htpa_bytes *block, unsigned char *key_schedule); // final iteration does not swap the block halves
+void htpa_round_function(htpa_bytes *block_half, unsigned char *round_key); // performs the HTPA round function on the block_half
+void htpa_compute_round_key(unsigned char *key); // computes the round key from the key schedule
+
+
+// helper functions for permutation mapping...
+int get_bit(unsigned char byte, int position);
+void get_bits_on_bytes(int *bits, int *positions, unsigned char *bytes, int bits_len);
+void set_bits_on_bytes(unsigned char *bytes, int *bits, int bits_len);
 
 #define debug_print(level, fmt, ...) \
         do { if (DEBUG && level <= DEBUG_LEVEL) fprintf(stderr, "%s:%d:%s(): [DEBUG %i] " fmt, __FILE__, \

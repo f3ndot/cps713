@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <openssl/evp.h>
@@ -326,7 +327,7 @@ htpa_bytes * htpa_algorithm(htpa_bytes *ciphertext, htpa_bytes *plaintext, htpa_
 
 
   unsigned char str[KEY_BYTE_LEN];
-  unsigned char str2[ROUND_BYTE_KEY_LEN];
+  unsigned char key_schedule[ROUND_BYTE_KEY_LEN];
 
   for (i = 0; i < KEY_BYTE_LEN; ++i) {
     str[i] = key->bytes[i];
@@ -335,27 +336,26 @@ htpa_bytes * htpa_algorithm(htpa_bytes *ciphertext, htpa_bytes *plaintext, htpa_
   for (i = 0; i < ROUND_BYTE_KEY_LEN; ++i) {
     debug_print(4, "START:    "BYTETOBINARYPATTERN" \n", BYTETOBINARY(str[i]));
 
-    // shift-left entire byte by i bits because of previous byte taking i bits of this one
-    str[i] = str[i] << i;
-    debug_print(4, "SHIFT LF: "BYTETOBINARYPATTERN" (Shift Left %i Bits)\n", BYTETOBINARY(str[i]), i);
-
-    // Remove/Mask out the last i+1 bits (i because of previous + 1 new bit to be removed)
-    str[i] = str[i] >> i+1;
+    // shift-left entire byte by i+1 bits because of parity removal and previous byte taking i bits of this one
     str[i] = str[i] << i+1;
-    debug_print(4, "REM LAST: "BYTETOBINARYPATTERN" (Moved Right-Left %i Bits)\n", BYTETOBINARY(str[i]), (i+1));
+    debug_print(4, "SHIFT LF: "BYTETOBINARYPATTERN" (Shift Left %i Bits)\n", BYTETOBINARY(str[i]), i+1);
 
-    // shift next byte's first-most i+1 bits to the right-most (position 8)
-    unsigned char temp = str[i+1] >> (8 - (i+1));
-    debug_print(4, "NXT SHFT: "BYTETOBINARYPATTERN" (Shift Right %i Bits)\n", BYTETOBINARY(temp), (8 - (i+1)));
+    // "delete" left-most bit of next byte
+    unsigned char temp = str[i+1] << 1;
+    debug_print(4, "DEL NEXT: "BYTETOBINARYPATTERN" (Shift Left %i Bits)\n", BYTETOBINARY(temp), 1);
+
+    // move the bits of next byte being moved into this one into place
+    temp = temp >> (7 - i);
+    debug_print(4, "NXT SHFT: "BYTETOBINARYPATTERN" (Shift Right %i Bits)\n", BYTETOBINARY(temp), (7 - i) );
 
     // combine/bitwise-OR the result
-    str2[i] = str[i] | temp;
-    debug_print(4, "BOR BOTH: "BYTETOBINARYPATTERN" \n", BYTETOBINARY(str2[i]));
+    key_schedule[i] = str[i] | temp;
+    debug_print(4, "OR BOTH:  "BYTETOBINARYPATTERN" \n", BYTETOBINARY(key_schedule[i]));
     debug_print(4, "---------------%s", "\n");
   }
 
   for (i = 0; i < ROUND_BYTE_KEY_LEN; ++i) {
-    sprintf(str_buf, "%s0x%.2X ", str_buf, str2[i]);
+    sprintf(str_buf, "%s0x%.2X ", str_buf, key_schedule[i]);
   }
   debug_print(2, "Key Schedule: %s\n", str_buf);
 
@@ -377,9 +377,9 @@ htpa_bytes * htpa_algorithm(htpa_bytes *ciphertext, htpa_bytes *plaintext, htpa_
     for (j = 0; j < rounds; ++j) {
       if(j+1 == rounds) {
         debug_print(3, "Block %i of %i: HTPA Round %i of %i: Final round! Not swapping block halves\n", i+1, plaintext_blocks->size, j+1, rounds);
-        htpa_final_round(plaintext_blocks->blocks[i]);
+        htpa_final_round(plaintext_blocks->blocks[i], key_schedule);
       } else {
-        htpa_round(plaintext_blocks->blocks[i]);
+        htpa_round(plaintext_blocks->blocks[i], key_schedule);
       }
 
       char *blck_txt = get_bytes_str(plaintext_blocks->blocks[i]);
@@ -551,19 +551,16 @@ unsigned char subbyte(unsigned char byte) {
   return sbox[byte];
 }
 
-void htpa_round(htpa_bytes *block) {
+void htpa_round(htpa_bytes *block, unsigned char *key_schedule) {
   int i;
   unsigned char * left_index = block->bytes;
   unsigned char * right_index = left_index + BLOCK_BYTE_HALF_LEN;
 
   htpa_bytes tmp_left_side;  tmp_left_side.len  = BLOCK_BYTE_HALF_LEN;
   htpa_bytes tmp_right_side; tmp_right_side.len = BLOCK_BYTE_HALF_LEN;
-  htpa_bytes round_key;      round_key.len      = ROUND_BYTE_KEY_LEN;
 
   tmp_left_side.bytes  = (unsigned char *) calloc(BLOCK_BYTE_HALF_LEN, sizeof(unsigned char));
   tmp_right_side.bytes = (unsigned char *) calloc(BLOCK_BYTE_HALF_LEN, sizeof(unsigned char));
-  // round_key.bytes      = (unsigned char *) calloc(ROUND_BYTE_KEY_LEN,  sizeof(unsigned char));
-  round_key.bytes = (unsigned char *) "AAAAAAAA";
   debug_print(4, "Allocated byte stream structs for halves and round key%s", "\n");
 
   memcpy(tmp_left_side.bytes,  left_index,  BLOCK_BYTE_HALF_LEN);
@@ -575,8 +572,8 @@ void htpa_round(htpa_bytes *block) {
   debug_print(4, "Copied right-side half into left-side half of block%s", "\n");
 
   // this tmp_left_side variable will be the new "right-side" once it's XOR'd with the old right-side's function output
-  // debug_print(3, "Sending right-side and round key into round function%s", "\n");
-  // htpa_round_function(&tmp_right_side, &round_key);
+  debug_print(3, "Sending right-side and round key into round function%s", "\n");
+  htpa_round_function(&tmp_right_side, key_schedule);
   for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
     tmp_left_side.bytes[i] = tmp_right_side.bytes[i] ^ tmp_left_side.bytes[i];
   }
@@ -589,25 +586,21 @@ void htpa_round(htpa_bytes *block) {
 
   free(tmp_left_side.bytes);
   free(tmp_right_side.bytes);
-  // free(round_key.bytes);
   debug_print(4, "Freed byte stream structs for halves and round key%s", "\n");
 }
 
-void htpa_final_round(htpa_bytes *block) {
+void htpa_final_round(htpa_bytes *block, unsigned char *key_schedule) {
   int i;
   unsigned char * left_index = block->bytes;
   unsigned char * right_index = left_index + BLOCK_BYTE_HALF_LEN;
-
-  htpa_bytes round_key;      round_key.len      = ROUND_BYTE_KEY_LEN;
-  round_key.bytes = (unsigned char *) calloc(ROUND_BYTE_KEY_LEN,  sizeof(unsigned char));
 
   htpa_bytes tmp_right_side; tmp_right_side.len = BLOCK_BYTE_HALF_LEN;
   tmp_right_side.bytes = (unsigned char *) calloc(BLOCK_BYTE_HALF_LEN, sizeof(unsigned char));
   memcpy(tmp_right_side.bytes, right_index, BLOCK_BYTE_HALF_LEN);
 
   // this tmp_left_side variable will be the new "right-side" once it's XOR'd with the old right-side's function output
-  // debug_print(3, "Sending right-side and round key into round function%s", "\n");
-  // htpa_round_function(&tmp_right_side, &round_key);
+  debug_print(3, "Sending right-side and round key into round function%s", "\n");
+  htpa_round_function(&tmp_right_side, key_schedule);
   for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
     left_index[i] = tmp_right_side.bytes[i] ^ left_index[i];
   }
@@ -616,20 +609,131 @@ void htpa_final_round(htpa_bytes *block) {
   memcpy(right_index, tmp_right_side.bytes, BLOCK_BYTE_HALF_LEN);
 
   free(tmp_right_side.bytes);
-  free(round_key.bytes);
   debug_print(4, "Freed byte stream structs for round key%s", "\n");
 }
 
-void htpa_round_function(htpa_bytes *block_half, htpa_bytes *round_key) {
+void htpa_round_function(htpa_bytes *block_half, unsigned char *round_key) {
   int i;
+
+  // will rotate its halves by 1 bit to the left
+  htpa_compute_round_key(round_key);
+
   for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
-    block_half->bytes[i] = block_half->bytes[i] ^ round_key->bytes[i];
+    block_half->bytes[i] = block_half->bytes[i] ^ round_key[i];
   }
   debug_print(3, "XOR'd the right-side with round key%s", "\n");
   for (i = 0; i < BLOCK_BYTE_HALF_LEN; ++i) {
     block_half->bytes[i] = subbyte(block_half->bytes[i]);
   }
   debug_print(3, "Substituted bytes!%s", "\n");
+
+  int bit[BLOCK_HALF_LEN];
+  int pos[BLOCK_HALF_LEN];
+  get_bits_on_bytes(bit, pos, block_half->bytes, BLOCK_HALF_LEN);
+  debug_print(4, "Assembled bitmap array!%s", "\n");
+
+  int tmp_bit[BLOCK_HALF_LEN];
+  for (i = 0; i < BLOCK_HALF_LEN; ++i) {
+    int j;
+    tmp_bit[pbox[i]-1] = bit[i];
+  }
+
+  set_bits_on_bytes(block_half->bytes, tmp_bit, BLOCK_HALF_LEN);
+  debug_print(3, "Performed permutations!%s", "\n");
+
+  // printf("Before Permutation:\n", "");
+  // for (i = 0; i < BLOCK_HALF_LEN; ++i) {
+  //   if(i % 8 == 0 && i > 0) printf("\n", "");
+  //   printf("%i @%2d\t\t", bit[i], pos[i]);
+  // }
+
+}
+
+// really it's just a rotation...
+void htpa_compute_round_key(unsigned char *key) {
+  int c_lmb, d_lmb, i;
+  unsigned char *c_cursor = key;
+  unsigned char *d_cursor = key + ROUND_BYTE_KEY_HALF_LEN;
+  char str_buf[CHUNK] = {0x00};
+
+  for (i = 0; i < ROUND_BYTE_KEY_LEN; ++i) {
+    sprintf(str_buf, "%s0x%.2X ", str_buf, key[i]);
+  }
+  debug_print(4, "Previous Round Key: %s\n", str_buf);
+
+  for (i = 0; i < ROUND_BYTE_KEY_HALF_LEN; ++i) {
+    // obtain the left-most-bit of entire byte stream
+    if(i == 0) {
+      c_lmb = c_cursor[i] & 0x80; // left-most mask
+      d_lmb = d_cursor[i] & 0x80; // left-most mask
+    }
+
+    // shift byte left by 1 bit
+    c_cursor[i] = c_cursor[i] << 1;
+    d_cursor[i] = d_cursor[i] << 1;
+
+    // if it's the last byte in the byte stream
+    if(i == ROUND_BYTE_KEY_HALF_LEN-1) {
+      // combine / bitwise OR the entire strings left-mode-bit to the last byte's right most location
+      c_cursor[i] |= (c_lmb >> 7);
+      d_cursor[i] |= (d_lmb >> 7);
+    } else {
+      // look ahead to next byte and get it's left-most and shift all the way to the right
+      unsigned char c_temp;
+      unsigned char d_temp;
+      c_temp = c_cursor[i+1] >> 7;
+      d_temp = d_cursor[i+1] >> 7;
+
+      // combine bitwise OR results
+      c_cursor[i] |= c_temp;
+      d_cursor[i] |= d_temp;
+    }
+  }
+
+  debug_print(3, "Rotated round key halves by 1 bit to the left%s", "\n");
+
+  str_buf[0] = 0x00;
+  for (i = 0; i < ROUND_BYTE_KEY_LEN; ++i) {
+    sprintf(str_buf, "%s0x%.2X ", str_buf, key[i]);
+  }
+  debug_print(2, "Round Key: %s\n", str_buf);
+}
+
+int get_bit(unsigned char byte, int position) {
+  int mask =  1 << (position-1);
+  // printf("Mask:"BYTETOBINARYPATTERN"\n", BYTETOBINARY(mask));
+  int masked_n = byte & mask;
+  return masked_n >> (position-1);
+}
+
+void get_bits_on_bytes(int *bits, int *positions, unsigned char *bytes, int bits_len) {
+  int i; int bit;
+
+  for (i = 0; i < bits_len; ++i) {
+    int byte_pos = floor((double) i/8);
+    bits[i] = get_bit(bytes[byte_pos], i%8);
+    positions[i] = i;
+  }
+}
+
+// sets the bits on a bytes
+void set_bits_on_bytes(unsigned char *bytes, int *bits, int bits_len) {
+  int i; int bit;
+
+  for (i = 0; i < bits_len; ++i) {
+    int byte_pos = floor((double) i/8);
+    int mask = 1 << i%8;
+
+    // need to clear
+    if(bits[i] == 0) {
+      int value = 0 << i%8;
+      bytes[byte_pos] = ((bytes[byte_pos] & ~mask) | (value & mask));
+    // need to set
+    } else {
+      int value = 1 << i%8;
+      bytes[byte_pos] = ((bytes[byte_pos] & ~mask) | (value & mask));
+    }
+  }
 }
 
 void print_version_message() {
