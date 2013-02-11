@@ -1,7 +1,7 @@
 all: htpa
 
 htpa: htpa.o
-	gcc htpa.o -o htpa
+	gcc htpa.o -lssl -lcrypto -o htpa
 
 htpa.o: htpa.c
 	gcc -c htpa.c

@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <openssl/evp.h>
+#include <openssl/rand.h>
 #include "htpa.h"
 
 
@@ -20,21 +21,29 @@ int main(int argc, char **argv) {
 
   // longopts stuff
   int c; // option char
-  int do_help, do_version, do_encrypt, do_decrypt, do_rounds; // flag vars
+  // flag vars
+  int do_help = 0;
+  int do_version = 0;
+  int do_encrypt = 0;
+  int do_decrypt = 0;
+  int do_iv = 0;
   int algorithm_mode = MODE_NOT_CHOSEN;
   char *filename = argv[0];
+  unsigned char iv_bytes[EVP_MAX_IV_LENGTH] = {0}; // only for AES
+  unsigned char key_bytes[EVP_MAX_KEY_LENGTH] = {0}; // only for AES
 
   struct option longopts[] = {
     { "algorithm",     required_argument,    NULL,         'a' },
     { "encrypt",       no_argument,          &do_encrypt,  'e' },
     { "decrypt",       no_argument,          &do_decrypt,  'd' },
-    { "rounds",        required_argument,    &do_rounds,   'r' },
-    { "help",          no_argument,          &do_help,     1   },
-    { "version",       no_argument,          &do_version,  1   },
+    { "iv",            required_argument,    &do_iv,       'i' },
+    { "rounds",        required_argument,    NULL,         'r' },
+    { "help",          no_argument,          &do_help,     1 },
+    { "version",       no_argument,          &do_version,  1 },
     { 0, 0, 0, 0 }
   };
 
-  while((c = getopt_long(argc, argv, "a:edr:hv", longopts, NULL)) != -1 ) {
+  while((c = getopt_long(argc, argv, "a:edi:r:hv", longopts, NULL)) != -1 ) {
     switch(c) {
     case 'a':
       // set algothim mode
@@ -43,6 +52,7 @@ int main(int argc, char **argv) {
       } else if(strcmp(optarg, "aes") == 0) {
         algorithm_mode = MODE_AES_CBC;
       } else {
+        fprintf(stderr, "ERROR: algorithm not chosen\n");
         print_help_message(argv[0]);
         exit(EXIT_FAILURE);
       }
@@ -68,6 +78,18 @@ int main(int argc, char **argv) {
         htpa_rounds = atoi(optarg);
       }
       break;
+    case 'i':
+      if(algorithm_mode != MODE_AES_CBC) {
+        fprintf(stderr, "WARNING: Ignoring --iv for HTPA.\n");
+      } else {
+        int len = strlen(optarg);
+        if(len > 16) {
+        memcpy(iv_bytes, optarg, 16);
+        } else {
+        memcpy(iv_bytes, optarg, strlen(optarg));
+        }
+      }
+      break;
     case 'h':
       do_help = 1;
       break;
@@ -91,11 +113,6 @@ int main(int argc, char **argv) {
   argc -= optind;
   argv += optind;
 
-  if(argc < 3) {
-    print_help_message(filename);
-    exit(EXIT_FAILURE);
-  }
-
   // print help if flag
   if(do_help == 1) {
     print_help_message(filename);
@@ -108,21 +125,30 @@ int main(int argc, char **argv) {
     exit(EXIT_SUCCESS);
   }
 
-  if(algorithm_mode == MODE_NOT_CHOSEN) {
+  if(argc < 3) {
+    fprintf(stderr, "ERROR: Not enough arguments\n");
     print_help_message(filename);
     exit(EXIT_FAILURE);
   }
 
-  printf("\nCPS713 Lab 1 Program v.1.0\n");
-  printf("by Justin B. & Jonathan K.\n\n");
+  if(algorithm_mode == MODE_NOT_CHOSEN) {
+    fprintf(stderr, "ERROR: algorithm not chosen\n");
+    print_help_message(filename);
+    exit(EXIT_FAILURE);
+  }
 
   /********************************************
   * AES ALGORITHM
   ********************************************/
   if(algorithm_mode == MODE_AES_CBC) {
+    int i;
+
     if((do_encrypt == 1 && do_decrypt == 1) || (do_encrypt != 1 && do_decrypt != 1)) {
       fprintf(stderr, "ERROR: You must specify either --encrypt *OR* --decrypt, not both or neither\n");
       exit(EXIT_FAILURE);
+    }
+    if(do_iv != 1) {
+      fprintf(stderr, "WARNING: No --iv option, AES IV set to nulls\n");
     }
     printf("OpenSSL AES-256-CBC Algorithm Selected\n");
     if(do_encrypt == 1) {
@@ -132,7 +158,152 @@ int main(int argc, char **argv) {
       puts("Decryption Mode Chosen");
     }
 
+    unsigned char inbuf[CHUNK];
+    unsigned char outbuf[CHUNK];
+    int outlen, tmplen;
+    int n;
+
+    // allocate memory for the key
+    // int len = strlen(argv[1]);
+    // if(len > 32) {
+    //   memcpy(key_bytes, argv[1], 32);
+    // } else {
+    //   memcpy(key_bytes, argv[1], strlen(argv[1]));
+    // }
+
+    for (i = 0; i < CHUNK; ++i)
+    {
+      inbuf[i] = (unsigned char) 'A';
+    }
+    for (i = 0; i < CHUNK; ++i)
+    {
+      outbuf[i] = (unsigned char) 0x00;
+    }
+
+    printf("PLAINTEXT:\n");
+    for (i = 0; i < 128; ++i)
+    {
+      putchar((char) inbuf[i]);
+    }
+    putchar('\n');
+    for (i = 0; i < 128; ++i)
+    {
+      printf("%.2X ", inbuf[i]);
+    }
+
+    printf("\n--------------------------------------\n");
+
+
+    // EVP_CIPHER_CTX *ctx;
+
+    // printf("%i\n\n",EVP_MAX_IV_LENGTH);
+    // exit(EXIT_SUCCESS);
+
+    /* This uses the OpenSSL PRNG .  See Recipe  11.9 */
+    RAND_bytes(key_bytes, EVP_MAX_KEY_LENGTH);
+    RAND_bytes(iv_bytes, EVP_MAX_IV_LENGTH);
+
+    // declar cipher context
     EVP_CIPHER_CTX ctx;
+    EVP_CIPHER_CTX de_ctx;
+    EVP_CIPHER_CTX_init(&ctx);
+    EVP_CIPHER_CTX_init(&de_ctx);
+
+    EVP_EncryptInit_ex(&ctx, EVP_aes_256_cbc(), NULL, key_bytes, iv_bytes);
+    EVP_DecryptInit_ex(&de_ctx, EVP_aes_256_cbc(), NULL, key_bytes, iv_bytes);
+
+    // while(1) {
+      if(!EVP_EncryptUpdate(&ctx, outbuf, &outlen, inbuf, 128)) {
+        fprintf(stderr, "EVP_EncryptUpdate() FAILED\n");
+        exit(EXIT_FAILURE);
+      }
+    // }
+
+    printf("DURING BLOCK UPDATE:\n");
+    for (i = 0; i < outlen; ++i)
+    {
+      putchar((char) outbuf[i]);
+    }
+    putchar('\n');
+    for (i = 0; i < outlen; ++i)
+    {
+      printf("%.2X ", outbuf[i]);
+    }
+
+
+    printf("\n--------------------------------------\n");
+
+
+
+    if(!EVP_EncryptFinal_ex(&ctx, outbuf + outlen, &tmplen)) {
+      fprintf(stderr, "EVP_EncryptFinal_ex() FAILED\n");
+      exit(EXIT_FAILURE);
+    }
+    outlen += tmplen;
+
+
+    printf("FINAL BLOCK STUFF %i:\n", outlen);
+    for (i = 0; i < outlen; ++i)
+    {
+      putchar((char) outbuf[i]);
+    }
+    putchar('\n');
+    for (i = 0; i < outlen; ++i)
+    {
+      printf("%.2X ", outbuf[i]);
+    }
+
+    printf("\n--------------------------------------\n");
+
+
+
+    printf("DURING DECRYPT BLOCK UPDATE:\n");
+    // while(1) {
+      if(!EVP_DecryptUpdate(&de_ctx, inbuf, &n, outbuf, outlen)) {
+        fprintf(stderr, "EVP_DecryptUpdate() FAILED\n");
+        exit(EXIT_FAILURE);
+      }
+    // }
+
+    for (i = 0; i < n; ++i)
+    {
+      putchar((char) inbuf[i]);
+    }
+    putchar('\n');
+    for (i = 0; i < n; ++i)
+    {
+      printf("%.2X ", inbuf[i]);
+    }
+
+    printf("\n--------------------------------------\n");
+
+
+    if(!EVP_DecryptFinal_ex(&de_ctx, inbuf + n, &tmplen)) {
+      fprintf(stderr, "EVP_DecryptFinal_ex() FAILED\n");
+      exit(EXIT_FAILURE);
+    }
+    n += tmplen;
+
+    for (i = 0; i < n; ++i)
+    {
+      putchar((char) inbuf[i]);
+    }
+    putchar('\n');
+    for (i = 0; i < n; ++i)
+    {
+      printf("%.2X ", inbuf[i]);
+    }
+
+
+
+    // EVP_EncryptInit(&ctx, EVP_aes_256_cbc(), key, iv_bytes);
+    // EVP_EncryptUpdate(&ctx, out, &outlen1, in, sizeof(in));
+    // EVP_EncryptFinal(&ctx, out + outlen1, &outlen2);
+
+
+    EVP_CIPHER_CTX_cleanup(&ctx);
+    EVP_CIPHER_CTX_cleanup(&de_ctx);
+
 
   }
 
@@ -147,7 +318,6 @@ int main(int argc, char **argv) {
     htpa_bytes plaintext;  htpa_bytes *plaintext_ptr  = &plaintext;
     htpa_bytes key;        htpa_bytes *key_ptr        = &key;
     htpa_bytes ciphertext; htpa_bytes *ciphertext_ptr = &ciphertext;
-    htpa_bytes decrypted;  htpa_bytes *decrypted_ptr  = &decrypted;
 
     // attempt to open a file, if error assume to be message string
     FILE *fp = fopen(argv[0], "rb");
@@ -173,7 +343,12 @@ int main(int argc, char **argv) {
 
     // allocate memory for the key
     key.bytes = (unsigned char *) calloc(KEY_BYTE_LEN, sizeof(unsigned char));
-    memcpy(key.bytes, argv[1], strlen(argv[1]));
+    // Ensure that it copies a max length of KEY_BYTE_LEN
+    if(strlen(argv[1]) < KEY_BYTE_LEN) {
+      memcpy(key.bytes, argv[1], strlen(argv[1]));
+    } else {
+      memcpy(key.bytes, argv[1], KEY_BYTE_LEN);
+    }
     key.len = KEY_BYTE_LEN;
 
     // perform the HTPA algorithm and save to a file
@@ -197,7 +372,7 @@ int main(int argc, char **argv) {
 
 
 htpa_bytes * htpa_algorithm(htpa_bytes *ciphertext, htpa_bytes *plaintext, htpa_bytes *key, int rounds) {
-  int i; int j; char str_buf[1024] = { 0x00 };
+  int i; int j; char str_buf[CHUNK] = { 0x00 };
 
   debug_print(4, "HTPA Block Length:       %i bytes (%i bits)\n", BLOCK_BYTE_LEN, BLOCK_LEN);
   debug_print(4, "HTPA Block-Half Length:  %i bytes (%i bits)\n", BLOCK_BYTE_HALF_LEN, BLOCK_HALF_LEN);
@@ -536,6 +711,7 @@ void print_help_message(char *name) {
   puts(" -a, --algorithm [htpa|aes]   run the program using ALGO algorithm 'htpa' or 'aes'");
   puts(" -e, --encrypt                encrypt the plaintext in filename_or_message (AES only)");
   puts(" -d, --decrypt                decrypt the ciphertext in filename_or_message (AES only)");
+  puts(" -i, --iv IV                  use AES with IV as initialization vector (AES only)");
   puts(" -r, --rounds N               perform N rounds of ALGO (HTPA only)");
   puts(" -h, --help                   display this help and exit");
   puts(" -v, --version                display version information and exit\n");
