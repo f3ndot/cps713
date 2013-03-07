@@ -68,7 +68,7 @@ int main(int argc, char const *argv[])
     exit(EXIT_FAILURE);
   }
 
-  printf("Encipherment Sanity Check!\n");
+  printf("Decryption Sanity Check!\n");
   for (i = 0; i < SANITY_KEYLEN_CHAR; ++i)
   {
     printf("Inv Key Matrix (row %d): [ "BYTETOBINARYPATTERNSPACE" ]\n", i+1, BYTETOBINARY(dkey[i]));
