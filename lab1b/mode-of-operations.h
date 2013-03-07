@@ -14,8 +14,15 @@
 #define HILL_KEYLEN SANITY_KEYLEN
 #define HILL_KEYLEN_CHAR SANITY_KEYLEN_CHAR
 
-/* Used in masking out desired bits in matrix multiplication */
-const unsigned char hill_row_masks[8] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
+/* mode of operations in hill cipher */
+#define HILL_MODE_ECB 0
+#define HILL_MODE_CBC 1
+
+/* Hill Cipher encryption and decryption functions */
+unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *plaintext, int len, unsigned char *key, int mode);
+unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *ciphertext, int len, unsigned char *dkey, int mode);
+unsigned char matrix_mult_vector(unsigned char *matrix, unsigned char vector);
+void printhex(unsigned char *bytes, int len);
 
 /* debug and utility functions */
 #ifndef DEBUG
@@ -28,9 +35,6 @@ const unsigned char hill_row_masks[8] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x
 #define debug_print(level, fmt, ...) \
         do { if (DEBUG && level <= DEBUG_LEVEL) fprintf(stderr, "%s:%d:%s(): [DEBUG %i] " fmt, __FILE__, \
                                 __LINE__, __func__, level, __VA_ARGS__); fflush(stderr); } while (0)
-
-
-unsigned char matrix_mult_vector(unsigned char *matrix, unsigned char vector);
 
 #define BYTETOBINARYPATTERN "%d%d%d%d%d%d%d%d"
 #define BYTETOBINARYPATTERNSPACE "%d %d %d %d %d %d %d %d"
