@@ -90,6 +90,7 @@ int main(int argc, char const *argv[])
    */
   int encipherment_mode = -1;
   int block_mode = -1;
+  char output_file[1024]; // filename is max 1024 chars...
 
   if(argc < 2) {
     fprintf(stderr, "Dude! You need to input a message or specify a file! Exiting...\n");
@@ -100,8 +101,10 @@ int main(int argc, char const *argv[])
   scanf("%d", &encipherment_mode);
   printf("Available Modes of Operation:\n(1) ECB\t\t(2) CBC\n\nEnter choice: ");
   scanf("%d", &block_mode);
+  printf("Where should we save the output / resulting bytes?\n\nEnter filename: ");
+  scanf("%s", output_file);
 
-  if(encipherment_mode != 1 || encipherment_mode != 2 || block_mode != 1 || block_mode != 2) {
+  if(encipherment_mode != 1 && encipherment_mode != 2 && block_mode != 1 && block_mode != 2) {
     fprintf(stderr, "Dude! Invalid choices! Exiting...\n");
     exit(EXIT_FAILURE);
   }
@@ -109,31 +112,82 @@ int main(int argc, char const *argv[])
 
   /*
    * Proceed with actual program
-   * XXX TODO actually have this change on modes and inputs (FILE check too)
    */
-  int msglen = strlen(argv[1]);
-  unsigned char *ct  = (unsigned char *) calloc(msglen, sizeof(unsigned char));
-  unsigned char *pt  = (unsigned char *) calloc(msglen, sizeof(unsigned char));
-  unsigned char *dpt = (unsigned char *) calloc(msglen, sizeof(unsigned char));
-  memcpy(pt, argv[1], msglen);
+  unsigned char *ct, *pt, *dpt;
+  int msglen;
 
-  printf("Original Plaintext:   \"%s\"\n", argv[1]);
-  hill_cipher_encrypt(ct, pt, msglen, key, HILL_MODE_ECB);
-  printf("Encrypted Ciphertext: "); printhex(ct, msglen); printf("\n");
-  hill_cipher_decrypt(dpt, ct, msglen, dkey, HILL_MODE_ECB);
-  printf("Decrypted Plaintext:  "); printhex(dpt, msglen); printf("\n");
-  printf("Decrypted Plaintext:  \"");
-  for (i = 0; i < msglen; ++i)
-  {
-    putchar(dpt[i]);
+  // determine if its a file or small plaintext string
+  FILE *fp = fopen(argv[1], "rb");
+  size_t bytes_read;
+  if(fp) {
+    // get the full bytesize of file
+    fseek(fp, 0L, SEEK_END);
+    msglen = ftell(fp);
+    fseek(fp, 0L, SEEK_SET);
+
+    debug_print(1, "Opened file \"%s\" for plaintext\n", argv[1]);
+
+    ct  = (unsigned char *) calloc(msglen, sizeof(unsigned char));
+    pt  = (unsigned char *) calloc(msglen, sizeof(unsigned char));
+    dpt = (unsigned char *) calloc(msglen, sizeof(unsigned char));
+
+    // char *buf = (char *) malloc(msglen * sizeof(unsigned char));
+    bytes_read = fread(pt, sizeof(char), msglen, fp);
+    debug_print(1, "Read %i bytes from file %s\n", (int) bytes_read, argv[1]);
+
+    fclose(fp);
+  } else {
+    debug_print(1, "Argument is not a file or cannot read, assuming \"%s\" to be plaintext\n", argv[1]);
+
+    msglen = strlen(argv[1]);
+    ct  = (unsigned char *) calloc(msglen, sizeof(unsigned char));
+    pt  = (unsigned char *) calloc(msglen, sizeof(unsigned char));
+    dpt = (unsigned char *) calloc(msglen, sizeof(unsigned char));
+    memcpy(pt, argv[1], msglen);
   }
-  printf("\"\n");
 
+
+  if(encipherment_mode == 1) {
+    printf("Original Plaintext:   \"");
+    for (i = 0; i < msglen; ++i)
+    {
+      putchar(pt[i]);
+    }
+    printf("\"\n");
+
+    hill_cipher_encrypt(ct, pt, msglen, key, HILL_MODE_ECB);
+    printf("Encrypted Ciphertext: "); printhex(ct, msglen); printf("\n");
+
+    save_bytes_to_file(output_file, ct, msglen);
+  }
+  if(encipherment_mode == 2) {
+    hill_cipher_decrypt(dpt, pt, msglen, dkey, HILL_MODE_ECB);
+    printf("Decrypted Plaintext:  "); printhex(dpt, msglen); printf("\n");
+    printf("Decrypted Plaintext:  \"");
+    for (i = 0; i < msglen; ++i)
+    {
+      putchar(dpt[i]);
+    }
+    printf("\"\n");
+
+    save_bytes_to_file(output_file, dpt, msglen);
+  }
 
 
   free(ct);
   free(pt);
+  free(dpt);
   exit(EXIT_SUCCESS);
+}
+
+
+void save_bytes_to_file(char *filename, unsigned char *bytes, int len)
+{
+  FILE *ofp = fopen(filename, "wb");
+  if(ofp) {
+    fwrite(bytes, len, 1, ofp);
+    fclose(ofp);
+  }
 }
 
 

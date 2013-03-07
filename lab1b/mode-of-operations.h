@@ -22,6 +22,7 @@
 unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *plaintext, int len, unsigned char *key, int mode);
 unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *ciphertext, int len, unsigned char *dkey, int mode);
 unsigned char matrix_mult_vector(unsigned char *matrix, unsigned char vector);
+void save_bytes_to_file(char *filename, unsigned char *bytes, int len);
 void printhex(unsigned char *bytes, int len);
 
 /* debug and utility functions */
