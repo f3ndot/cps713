@@ -1,4 +1,5 @@
 // Justin Bull 500355958
+// Jonathan Kwan 500342079
 
 #define DEBUG 0
 #define DEBUG_LEVEL 2
@@ -101,7 +102,7 @@ int main(int argc, char const *argv[])
   scanf("%d", &encipherment_mode);
   printf("Available Modes of Operation:\n(1) ECB\t\t(2) CBC\n\nEnter choice: ");
   scanf("%d", &block_mode);
-  printf("Where should we save the output / resulting bytes?\n\nEnter filename: ");
+  printf("Where should we save the output / resulting bytes? Type \"none\" to not save to a file\n\nEnter filename: ");
   scanf("%s", output_file);
 
   if(encipherment_mode != 1 && encipherment_mode != 2 && block_mode != 1 && block_mode != 2) {
@@ -162,6 +163,7 @@ int main(int argc, char const *argv[])
   }
   if(encipherment_mode == 2) {
     hill_cipher_decrypt(dpt, pt, msglen, dkey, HILL_MODE_ECB);
+    printf("Original Ciphertext:  "); printhex(dpt, msglen); printf("\n");
     printf("Decrypted Plaintext:  "); printhex(dpt, msglen); printf("\n");
     printf("Decrypted Plaintext:  \"");
     for (i = 0; i < msglen; ++i)
@@ -183,6 +185,8 @@ int main(int argc, char const *argv[])
 
 void save_bytes_to_file(char *filename, unsigned char *bytes, int len)
 {
+  if(strcmp(filename, "none") == 0) return;
+
   FILE *ofp = fopen(filename, "wb");
   if(ofp) {
     fwrite(bytes, len, 1, ofp);
