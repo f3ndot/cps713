@@ -14,16 +14,21 @@
 #define SANITY_PLAINLEN_CHAR ((int) SANITY_PLAINLEN / CHAR_BIT)
 #define HILL_KEYLEN SANITY_KEYLEN
 #define HILL_KEYLEN_CHAR SANITY_KEYLEN_CHAR
+#define HILL_HEADER_LEN 6
 #define IVTABLE_SIZE 1024
 #define IVTABLE_BITMAP_SIZE ((int) IVTABLE_SIZE / 8)
 
 /* mode of operations in hill cipher */
 #define HILL_MODE_ECB 0
 #define HILL_MODE_CBC 1
+#define HILL_MODE_OFB 2
+#define HILL_IV_ECB 0
+#define HILL_IV_TABLE 1
+#define HILL_IV_UNUSED -1
 
 /* Hill Cipher encryption and decryption functions */
-unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *plaintext, int len, unsigned char *key, int mode);
-unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *ciphertext, int len, unsigned char *dkey, int mode);
+unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *plaintext, int len, unsigned char *key, int mode, unsigned char iv, int iv_flag);
+unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *ciphertext, int len, unsigned char *dkey);
 unsigned char matrix_mult_vector(unsigned char *matrix, unsigned char vector);
 void save_bytes_to_file(char *filename, unsigned char *bytes, int len);
 void printhex(unsigned char *bytes, int len);

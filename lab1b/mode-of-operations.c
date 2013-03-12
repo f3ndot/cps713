@@ -43,58 +43,9 @@ int main(int argc, char const *argv[])
     0x01  // 0 0 0 0 0 0 0 1
   };
 
-  if(DEBUG == 1)
-  {
-    printf("Encipherment Sanity Check!\n");
-    for (i = 0; i < SANITY_KEYLEN_CHAR; ++i)
-    {
-      printf("Key Matrix (row %d): [ "BYTETOBINARYPATTERNSPACE" ]\n", i+1, BYTETOBINARY(key[i]));
-    }
-
-    unsigned char plain[SANITY_PLAINLEN_CHAR] = { 0xA5 }; // 10100101
-    printf("Provided Plaintext:  ");
-    for (i = 0; i < SANITY_PLAINLEN_CHAR; ++i)
-    {
-      printf(BYTETOBINARYPATTERN" ", BYTETOBINARY(plain[i]));
-    }
-    printf("\n");
-
-
-    unsigned char sanity_ciphertext = matrix_mult_vector(key, plain[0]);
-    printf("Expected Ciphertext: 11101111\n");
-    printf("Computed Ciphertext: "BYTETOBINARYPATTERN"\n", BYTETOBINARY(sanity_ciphertext));
-
-    if(sanity_ciphertext == 0xEF) // aka 11101111
-    {
-      printf("Encipherment Sanity Check OK! Proceeding!\n\n");
-    }
-    else
-    {
-      fprintf(stderr, "ERROR!!! SANITY CHECK FOR ENCIPHERMENT FAILED!\n");
-      exit(EXIT_FAILURE);
-    }
-
-    printf("Decryption Sanity Check!\n");
-    for (i = 0; i < SANITY_KEYLEN_CHAR; ++i)
-    {
-      printf("Inv Key Matrix (row %d): [ "BYTETOBINARYPATTERNSPACE" ]\n", i+1, BYTETOBINARY(dkey[i]));
-    }
-    unsigned char sanity_decryped_plaintext = matrix_mult_vector(dkey, sanity_ciphertext);
-    printf("Expected Decryption: "BYTETOBINARYPATTERN"\n", BYTETOBINARY(plain[0]));
-    printf("Computed Decryption: "BYTETOBINARYPATTERN"\n", BYTETOBINARY(sanity_decryped_plaintext));
-    if(sanity_decryped_plaintext == plain[0]) // aka 11101111
-    {
-      printf("Decryption Sanity Check OK! Proceeding!\n\n");
-    }
-    else
-    {
-      fprintf(stderr, "ERROR!!! SANITY CHECK FOR DECRYPTION FAILED!\n");
-      exit(EXIT_FAILURE);
-    }
-  }
 
   /*
-   * Quickly check for input and prepare values accordingly
+   * Check for input and prepare values accordingly
    */
   int encipherment_mode = -1;
   int block_mode = -1;
@@ -213,14 +164,14 @@ int main(int argc, char const *argv[])
     }
     printf("\"\n");
 
-    hill_cipher_encrypt(ct, pt, msglen, key, HILL_MODE_ECB);
+    hill_cipher_encrypt(ct, pt, msglen, key, HILL_MODE_ECB, HILL_UNUSED, HILL_UNUSED); // IV and its flag are unused
     printf("Encrypted Ciphertext: "); printhex(ct, msglen); printf("\n");
 
     save_bytes_to_file(output_file, ct, msglen);
   }
   if(encipherment_mode == 2)
   {
-    hill_cipher_decrypt(dpt, pt, msglen, dkey, HILL_MODE_ECB);
+    hill_cipher_decrypt(dpt, pt, msglen, dkey); // mode and IV is detected in encryption header
     printf("Original Ciphertext:  "); printhex(dpt, msglen); printf("\n");
     printf("Decrypted Plaintext:  "); printhex(dpt, msglen); printf("\n");
     printf("Decrypted Plaintext:  \"");
@@ -254,9 +205,26 @@ void save_bytes_to_file(char *filename, unsigned char *bytes, int len)
 }
 
 
-unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *plaintext, int len, unsigned char *key, int mode)
+unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *plaintext, int len, unsigned char *key, int mode, unsigned char iv, int iv_flag)
 {
   int i;
+  unsigned char header[HILL_HEADER_LEN];
+  // Header format: [ Magic header "HC" (2 bytes) | Mode (1 byte) | IV Table Index Flag (1 bit) | HC-ECB encrypted IV or IV Table Index (3 bytes - 1 bit) | Version (1 byte) ]
+  header = { 'H', 'C', mode, 0x00, 0x00, 0x00, 0x02 };
+  if(iv_flag == HILL_IV_TABLE)
+  {
+    header[3] |= (1 << 7); // set the left-most bit to 1
+    // TODO
+  }
+  else if(iv_flag == HILL_IV_ECB)
+  {
+    // TODO
+  }
+
+  // reallocate to make space for header
+  debug_print("Reallocating memory for hill cipher header (%d more bytes needed)", HILL_HEADER_LEN);
+  ciphertext = (unsigned char *) realloc(ciphertext, len + HILL_HEADER_LEN);
+
   if(mode == HILL_MODE_ECB)
   {
     // iterate through plaintext and encrypt block-by-block without any sort of chaining..
@@ -271,20 +239,38 @@ unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *pl
 }
 
 
-unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *ciphertext, int len, unsigned char *dkey, int mode)
+unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *ciphertext, int len, unsigned char *dkey)
 {
   int i;
-  if(mode == HILL_MODE_ECB)
+
+  //Attempt to read header
+  if(ciphertext[0] != 'H' || ciphertext[1] != 'C')
   {
-    // iterate through plaintext and encrypt block-by-block without any sort of chaining..
-    for (i = 0; i < len; ++i)
-    {
-      plaintext[i] = matrix_mult_vector(dkey, ciphertext[i]);
-    }
-    return plaintext;
+    fprintf(stderr, "ERROR: Not an encrypted file! (Unable to find hill cipher header)\n","");
+    exit(EXIT_FAILURE);
   }
-  fprintf(stderr, "ERROR: Unknown hill cipher mode!\n","");
-  return NULL;
+
+  switch(ciphertext[2])
+  {
+    case HILL_MODE_ECB:
+      printf("Detected ciphertext in ECB mode...\n");
+      for (i = 0; i < len; ++i)
+      {
+        plaintext[i] = matrix_mult_vector(dkey, ciphertext[i]);
+      }
+      return plaintext;
+      break;
+    case HILL_MODE_CBC:
+      printf("Detected ciphertext in CBC mode...\n");
+      break;
+    case HILL_MODE_OFB:
+      printf("Detected ciphertext in OFB mode...\n");
+      break;
+    default:
+      fprintf(stderr, "ERROR: Unknown hill cipher mode! (Read \"%c\" in mode field of hill cipher header)\n",ciphertext[2]);
+      exit(EXIT_FAILURE);
+      break;
+  }
 }
 
 
@@ -366,6 +352,7 @@ unsigned char consume_next_available_iv(FILE *table_fp)
   return tmp;
 }
 
+
 FILE * generate_iv_table(char *filename)
 {
   const int table_sz = IVTABLE_SIZE;
@@ -391,6 +378,7 @@ FILE * generate_iv_table(char *filename)
 
   return fp;
 }
+
 
 void printhex(unsigned char *bytes, int len)
 {
