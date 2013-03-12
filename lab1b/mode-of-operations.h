@@ -14,20 +14,36 @@
 #define SANITY_PLAINLEN_CHAR ((int) SANITY_PLAINLEN / CHAR_BIT)
 #define HILL_KEYLEN SANITY_KEYLEN
 #define HILL_KEYLEN_CHAR SANITY_KEYLEN_CHAR
-#define HILL_HEADER_LEN 6
 #define IVTABLE_SIZE 1024
 #define IVTABLE_BITMAP_SIZE ((int) IVTABLE_SIZE / 8)
 
 /* mode of operations in hill cipher */
-#define HILL_MODE_ECB 0
-#define HILL_MODE_CBC 1
-#define HILL_MODE_OFB 2
-#define HILL_IV_ECB 0
-#define HILL_IV_TABLE 1
-#define HILL_IV_UNUSED -1
+#define HILL_MODE_ECB 0x00
+#define HILL_MODE_CBC 0x01
+#define HILL_MODE_OFB 0x02
+#define HILL_IV_ECB 0x00
+#define HILL_IV_TABLE 0x80
+#define HILL_UNUSED 0x00
+
+/* encryption header definitions */
+#define HILL_HEADER_MODE 2
+#define HILL_HEADER_IV 5
+#define HILL_HEADER_VERSION 6
+typedef struct hillcipher_header_tag
+{
+  unsigned char magic[2];
+  unsigned char flags; // 0x80 = IV table, 0x00 = ECB mode, 0x01 = CBC mode, 0x02 = OFB mode
+  unsigned char iv;
+  unsigned int iv_index;
+  unsigned char version;
+} hillcipher_header;
+#define HILL_HEADER_LEN 9
+
+void init_header_struct(hillcipher_header *header);
+
 
 /* Hill Cipher encryption and decryption functions */
-unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *plaintext, int len, unsigned char *key, int mode, unsigned char iv, int iv_flag);
+unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *plaintext, int len, unsigned char *key, int mode, unsigned char iv, int iv_index);
 unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *ciphertext, int len, unsigned char *dkey);
 unsigned char matrix_mult_vector(unsigned char *matrix, unsigned char vector);
 void save_bytes_to_file(char *filename, unsigned char *bytes, int len);
