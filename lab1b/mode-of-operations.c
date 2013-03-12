@@ -130,7 +130,7 @@ int main(int argc, char const *argv[])
       }
       else if(iv_source == 2)
       {
-        FILE *iv_fp = fopen(ivtable_file, "rb");
+        FILE *iv_fp = fopen(ivtable_file, "r+b");
         if(iv_fp)
         {
           iv = consume_next_available_iv(iv_fp);
@@ -141,7 +141,7 @@ int main(int argc, char const *argv[])
           printf("Nonce-generated IV lookup table doesn't exist! Generating %d nonce values...\n", IVTABLE_SIZE);
           FILE *iv_fp2;
           iv_fp2 = generate_iv_table(ivtable_file);
-          iv = consume_next_available_iv(iv_fp);
+          iv = consume_next_available_iv(iv_fp2);
           fclose(iv_fp2);
         }
       }
@@ -331,32 +331,31 @@ unsigned char consume_next_available_iv(FILE *table_fp)
   for (i = 0; i < (table_sz/8); ++i)
   {
     tmp = (unsigned char) fgetc(table_fp);
-    debug_print(1, "Inspecting index byte 0x%.2X \n", tmp);
+    debug_print(2, "Inspecting index byte 0x%.2X \n", tmp);
 
-    if((tmp & 0x80) == 0)
-      bit_pos = (i*8) + 0; break;
-    if((tmp & 0x40) == 0)
-      bit_pos = (i*8) + 1; break;
-    if((tmp & 0x20) == 0)
-      bit_pos = (i*8) + 2; break;
-    if((tmp & 0x10) == 0)
-      bit_pos = (i*8) + 3; break;
-    if((tmp & 0x08) == 0)
-      bit_pos = (i*8) + 4; break;
-    if((tmp & 0x04) == 0)
-      bit_pos = (i*8) + 5; break;
-    if((tmp & 0x02) == 0)
-      bit_pos = (i*8) + 6; break;
-    if((tmp & 0x01) == 0)
-      bit_pos = (i*8) + 7; break;
-    debug_print(1, "Bitmap byte %d exhausted... Moving on...\n", i);
+    if((tmp & 0x80) == 0) { bit_pos = (i*8) + 0; tmp |= 0x80; break; }
+    if((tmp & 0x40) == 0) { bit_pos = (i*8) + 1; tmp |= 0x40; break; }
+    if((tmp & 0x20) == 0) { bit_pos = (i*8) + 2; tmp |= 0x20; break; }
+    if((tmp & 0x10) == 0) { bit_pos = (i*8) + 3; tmp |= 0x10; break; }
+    if((tmp & 0x08) == 0) { bit_pos = (i*8) + 4; tmp |= 0x08; break; }
+    if((tmp & 0x04) == 0) { bit_pos = (i*8) + 5; tmp |= 0x04; break; }
+    if((tmp & 0x02) == 0) { bit_pos = (i*8) + 6; tmp |= 0x02; break; }
+    if((tmp & 0x01) == 0) { bit_pos = (i*8) + 7; tmp |= 0x01; break; }
+    debug_print(2, "Bitmap byte no. %d exhausted... Moving on...\n", i);
   }
 
-  if(bit_pos == -1) {
+  if(bit_pos == -1)
+  {
     fprintf(stderr, "ERROR! The IV Table has been exhausted! Please delete and regenerate. Dying...\n");
     exit(EXIT_FAILURE);
   }
 
+  // immediately burn the index. int i should be the byte index
+  debug_print(2, "Bitmap byte at offset %d being updated to indicate used IV...\n", i);
+  fseek(table_fp, i, SEEK_SET);
+  fputc(tmp, table_fp);
+
+  // put pointer in position for obtaining IV value
   fseek(table_fp, IVTABLE_BITMAP_SIZE + bit_pos, SEEK_SET);
   tmp = (unsigned char) fgetc(table_fp);
 
@@ -371,7 +370,7 @@ FILE * generate_iv_table(char *filename)
 {
   const int table_sz = IVTABLE_SIZE;
   int i;
-  FILE *fp = fopen(filename, "wb");
+  FILE *fp = fopen(filename, "w+b");
 
   if(table_sz % 8 != 0)
   {
@@ -389,6 +388,7 @@ FILE * generate_iv_table(char *filename)
     unsigned char val = (unsigned char) random();
     fwrite(&val, 1, 1, fp);
   }
+
   return fp;
 }
 
