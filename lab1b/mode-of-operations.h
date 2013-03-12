@@ -14,6 +14,8 @@
 #define SANITY_PLAINLEN_CHAR ((int) SANITY_PLAINLEN / CHAR_BIT)
 #define HILL_KEYLEN SANITY_KEYLEN
 #define HILL_KEYLEN_CHAR SANITY_KEYLEN_CHAR
+#define IVTABLE_SIZE 1024
+#define IVTABLE_BITMAP_SIZE ((int) IVTABLE_SIZE / 8)
 
 /* mode of operations in hill cipher */
 #define HILL_MODE_ECB 0
@@ -25,6 +27,9 @@ unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *cip
 unsigned char matrix_mult_vector(unsigned char *matrix, unsigned char vector);
 void save_bytes_to_file(char *filename, unsigned char *bytes, int len);
 void printhex(unsigned char *bytes, int len);
+
+FILE * generate_iv_table(char *filename);
+unsigned char consume_next_available_iv(FILE *table_fp);
 
 /* debug and utility functions */
 #ifndef DEBUG
