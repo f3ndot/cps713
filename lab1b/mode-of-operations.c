@@ -52,7 +52,8 @@ int main(int argc, char const *argv[])
   int iv_source = -1;
   char output_file[1024]; // filename is max 1024 chars...
   char ivtable_file[] = "ivtable.bin";
-  char iv;
+  char iv = HILL_UNUSED;
+  int iv_index = HILL_UNUSED;
 
   if(argc < 2)
   {
@@ -67,11 +68,12 @@ int main(int argc, char const *argv[])
   if(encipherment_mode == 1)
   {
 
-    printf("Available Modes of Operation:\n(1) ECB\t\t(2) CBC\n\nEnter choice: ");
+    printf("Available Modes of Operation:\n(1) ECB\t\t(2) CBC\t\t(3) OFB\n\nEnter choice: ");
     scanf("%d", &block_mode);
+    block_mode -= 1;
 
     // if CBC mode has been chosen
-    if(block_mode == 2 && encipherment_mode == 1)
+    if(block_mode != HILL_MODE_ECB && encipherment_mode == 1)
     {
       printf("Do you want to (1) randomly select an IV or (2) use a public nonce IV table?\n\nEnter choice: ");
       scanf("%d", &iv_source);
@@ -84,7 +86,7 @@ int main(int argc, char const *argv[])
         FILE *iv_fp = fopen(ivtable_file, "r+b");
         if(iv_fp)
         {
-          iv = consume_next_available_iv(iv_fp);
+          iv = consume_next_available_iv(iv_fp, &iv_index);
           fclose(iv_fp);
         }
         else
@@ -92,27 +94,16 @@ int main(int argc, char const *argv[])
           printf("Nonce-generated IV lookup table doesn't exist! Generating %d nonce values...\n", IVTABLE_SIZE);
           FILE *iv_fp2;
           iv_fp2 = generate_iv_table(ivtable_file);
-          iv = consume_next_available_iv(iv_fp2);
+          iv = consume_next_available_iv(iv_fp2, &iv_index);
           fclose(iv_fp2);
         }
       }
     }
 
   } // end if(encipherment_mode == 1)
-  // if decrypting, look up encryption header to determine ECB or CBC and with what IV type
-  else if(encipherment_mode == 2)
-  {
-    // TODO
-  }
 
   printf("Where should we save the output / resulting bytes? Type \"none\" to not save to a file\n\nEnter filename: ");
   scanf("%s", output_file);
-
-  if(encipherment_mode != 1 && encipherment_mode != 2 && block_mode != 1 && block_mode != 2)
-  {
-    fprintf(stderr, "Dude! Invalid choices! Exiting...\n");
-    exit(EXIT_FAILURE);
-  }
 
 
   /*
@@ -158,7 +149,7 @@ int main(int argc, char const *argv[])
     }
     printf("\"\n");
 
-    ct = hill_cipher_encrypt(ct, pt, msglen, key, HILL_MODE_ECB, HILL_UNUSED, HILL_UNUSED); // IV and its flag are unused
+    ct = hill_cipher_encrypt(ct, pt, msglen, key, block_mode, iv, iv_index); // IV and its flag are unused
     printf("Encrypted Ciphertext: "); printhex(ct, msglen + HILL_HEADER_LEN); printf("\n");
 
     save_bytes_to_file(output_file, ct, msglen + HILL_HEADER_LEN);
@@ -227,7 +218,7 @@ unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *pl
   if(iv_index == HILL_UNUSED && mode != HILL_MODE_ECB)
   {
     header.flags |= HILL_IV_ECB; // set no flag
-    header.iv = iv;
+    header.iv = matrix_mult_vector(key, iv); // ECB-encrypt IV if stored in header
   }
   if(iv_index != HILL_UNUSED && mode != HILL_MODE_ECB)
   {
@@ -243,20 +234,62 @@ unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *pl
   debug_print(2, "Copying header bytes to byte stream\n","");
   memcpy(ciphertext, &header, HILL_HEADER_LEN);
 
-  if(mode == HILL_MODE_ECB)
+  switch(mode)
   {
-    debug_print(2, "Performing encryption of bytestream in ECB mode\n","");
-    // iterate through plaintext and encrypt block-by-block without any sort of chaining..
-    debug_print(2, "Calculating ciphertext at bytestream offset %i\n",HILL_HEADER_LEN);
-    for (i = 0; i < len; ++i)
-    {
-      ciphertext[i+HILL_HEADER_LEN] = matrix_mult_vector(key, plaintext[i]);
-      debug_print(2, "Encrypted character '%c' to '%c' (0x%.2X) at index %i\n",plaintext[i],ciphertext[i+HILL_HEADER_LEN],ciphertext[i+HILL_HEADER_LEN], i+HILL_HEADER_LEN);
-    }
-    return ciphertext;
+    case HILL_MODE_ECB:
+      debug_print(2, "Performing encryption of bytestream in ECB mode\n","");
+      // iterate through plaintext and encrypt block-by-block without any sort of chaining..
+      debug_print(2, "Calculating ciphertext at bytestream offset %i\n",HILL_HEADER_LEN);
+      for (i = 0; i < len; ++i)
+      {
+        ciphertext[i+HILL_HEADER_LEN] = matrix_mult_vector(key, plaintext[i]);
+        debug_print(2, "Encrypted character '%c' to '%c' (0x%.2X) at index %i\n",plaintext[i],ciphertext[i+HILL_HEADER_LEN],ciphertext[i+HILL_HEADER_LEN], i+HILL_HEADER_LEN);
+      }
+      return ciphertext;
+      break;
+    case HILL_MODE_CBC:
+      debug_print(2, "Performing encryption of bytestream in CBC mode\n","");
+      if((header.flags & HILL_HEADER_IV_MASK) == HILL_IV_TABLE)
+      {
+        debug_print(2, "IV source is in public nonce-generated IV table\n","");
+        debug_print(2, "IV value is 0x%.2X at index %i\n", iv, header.iv_index);
+      }
+      else if((header.flags & HILL_HEADER_IV_MASK) == HILL_IV_ECB)
+      {
+        debug_print(2, "IV source is an HC-ECB encrypted byte stored in header\n","");
+        debug_print(2, "IV value is 0x%.2X HC-ECB encrypted to be 0z%.2X in header\n", iv, header.iv);
+      }
+      else
+      {
+        fprintf(stderr, "ERROR: Logic failure in IV source detection. Dying...!\n","");
+        exit(EXIT_FAILURE);
+      }
+
+      // main encryption routine for CBC mode with IV feedback
+      for (i = 0; i < len; ++i)
+      {
+        if(i == 0)
+        {
+          ciphertext[i+HILL_HEADER_LEN] = matrix_mult_vector(key, iv ^ plaintext[i]);
+          debug_print(2, "Encrypted character '%c' to '%c' (0x%.2X) at index %i (CBC'd with IV byte 0x%.2X)\n",plaintext[i],ciphertext[i+HILL_HEADER_LEN],ciphertext[i+HILL_HEADER_LEN], i+HILL_HEADER_LEN, iv);
+        }
+        else
+        {
+          ciphertext[i+HILL_HEADER_LEN] = matrix_mult_vector(key, ciphertext[i+HILL_HEADER_LEN-1] ^ plaintext[i]);
+          debug_print(2, "Encrypted character '%c' to '%c' (0x%.2X) at index %i (CBC'd with prev ct byte 0x%.2X)\n",plaintext[i],ciphertext[i+HILL_HEADER_LEN],ciphertext[i+HILL_HEADER_LEN], i+HILL_HEADER_LEN, ciphertext[i+HILL_HEADER_LEN-1]);
+        }
+      }
+      return ciphertext;
+      break;
+    case HILL_MODE_OFB:
+      debug_print(2, "Performing encryption of bytestream in OFB mode\n","");
+      printf("Detected ciphertext in OFB mode...\n");
+      break;
+    default:
+      fprintf(stderr, "ERROR: Unknown hill cipher mode!\n","");
+      exit(EXIT_FAILURE);
+      break;
   }
-  fprintf(stderr, "ERROR: Unknown hill cipher mode!\n","");
-  return NULL;
 }
 
 
@@ -341,7 +374,7 @@ unsigned char matrix_mult_vector(unsigned char *matrix, unsigned char vector)
 }
 
 
-unsigned char consume_next_available_iv(FILE *table_fp)
+unsigned char consume_next_available_iv(FILE *table_fp, int *iv_index)
 {
   const int table_sz = IVTABLE_SIZE;
   int i;
@@ -383,6 +416,7 @@ unsigned char consume_next_available_iv(FILE *table_fp)
   tmp = (unsigned char) fgetc(table_fp);
 
   debug_print(1, "Usable IV value 0x%.2X at index %d obtained\n", tmp, bit_pos);
+  *(iv_index) = bit_pos; // set the argument pos
 
   // return pointer to its original location
   fseek(table_fp, opos, SEEK_SET);

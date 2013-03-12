@@ -49,7 +49,7 @@ void save_bytes_to_file(char *filename, unsigned char *bytes, int len);
 void printhex(unsigned char *bytes, int len);
 
 FILE * generate_iv_table(char *filename);
-unsigned char consume_next_available_iv(FILE *table_fp);
+unsigned char consume_next_available_iv(FILE *table_fp, int *iv_index);
 
 /* debug and utility functions */
 #ifndef DEBUG
