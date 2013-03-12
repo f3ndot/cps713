@@ -26,9 +26,8 @@
 #define HILL_UNUSED 0x00
 
 /* encryption header definitions */
-#define HILL_HEADER_MODE 2
-#define HILL_HEADER_IV 5
-#define HILL_HEADER_VERSION 6
+#define HILL_HEADER_MODE_MASK 0x01
+#define HILL_HEADER_IV_MASK 0x80
 typedef struct hillcipher_header_tag
 {
   unsigned char magic[2];
@@ -39,8 +38,8 @@ typedef struct hillcipher_header_tag
 } hillcipher_header;
 #define HILL_HEADER_LEN 9
 
-void init_header_struct(hillcipher_header *header);
-
+void init_header_struct(hillcipher_header *header); // inits default values
+void build_header_struct(hillcipher_header *header, unsigned char *data); // used to create header struct from bytestream
 
 /* Hill Cipher encryption and decryption functions */
 unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *plaintext, int len, unsigned char *key, int mode, unsigned char iv, int iv_index);

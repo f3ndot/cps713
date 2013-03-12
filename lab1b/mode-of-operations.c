@@ -133,11 +133,7 @@ int main(int argc, char const *argv[])
 
     debug_print(1, "Opened file \"%s\" for plaintext\n", argv[1]);
 
-    ct  = (unsigned char *) calloc(msglen, sizeof(unsigned char));
     pt  = (unsigned char *) calloc(msglen, sizeof(unsigned char));
-    dpt = (unsigned char *) calloc(msglen, sizeof(unsigned char));
-
-    // char *buf = (char *) malloc(msglen * sizeof(unsigned char));
     bytes_read = fread(pt, sizeof(char), msglen, fp);
     debug_print(1, "Read %i bytes from file %s\n", (int) bytes_read, argv[1]);
 
@@ -148,9 +144,7 @@ int main(int argc, char const *argv[])
     debug_print(1, "Argument is not a file or cannot read, assuming \"%s\" to be plaintext\n", argv[1]);
 
     msglen = strlen(argv[1]);
-    ct  = (unsigned char *) calloc(msglen + HILL_HEADER_LEN, sizeof(unsigned char));
     pt  = (unsigned char *) calloc(msglen, sizeof(unsigned char));
-    dpt = (unsigned char *) calloc(msglen, sizeof(unsigned char));
     memcpy(pt, argv[1], msglen);
   }
 
@@ -164,18 +158,18 @@ int main(int argc, char const *argv[])
     }
     printf("\"\n");
 
-    hill_cipher_encrypt(ct, pt, msglen, key, HILL_MODE_ECB, HILL_UNUSED, HILL_UNUSED); // IV and its flag are unused
+    ct = hill_cipher_encrypt(ct, pt, msglen, key, HILL_MODE_ECB, HILL_UNUSED, HILL_UNUSED); // IV and its flag are unused
     printf("Encrypted Ciphertext: "); printhex(ct, msglen + HILL_HEADER_LEN); printf("\n");
 
     save_bytes_to_file(output_file, ct, msglen + HILL_HEADER_LEN);
   }
   if(encipherment_mode == 2)
   {
-    hill_cipher_decrypt(dpt, pt, msglen, dkey); // mode and IV is detected in encryption header
-    printf("Original Ciphertext:  "); printhex(dpt, msglen + HILL_HEADER_LEN); printf("\n");
-    printf("Decrypted Plaintext:  "); printhex(dpt, msglen); printf("\n");
+    dpt = hill_cipher_decrypt(dpt, pt, msglen, dkey); // mode and IV is detected in encryption header
+    printf("Original Ciphertext:  "); printhex(pt, msglen); printf("\n");
+    printf("Decrypted Plaintext:  "); printhex(dpt, msglen - HILL_HEADER_LEN); printf("\n");
     printf("Decrypted Plaintext:  \"");
-    for (i = 0; i < msglen; ++i)
+    for (i = 0; i < msglen - HILL_HEADER_LEN; ++i)
     {
       putchar(dpt[i]);
     }
@@ -213,14 +207,13 @@ void init_header_struct(hillcipher_header *header) {
   header->version = 0x01;
 }
 
-// TODO
 void build_header_struct(hillcipher_header *header, unsigned char *data) {
   header->magic[0] = data[0];
   header->magic[1] = data[1];
   header->flags = data[2];
-  header->iv = data[2];
-  header->iv_index = 0;
-  header->version = 0x01;
+  header->iv = data[3];
+  header->iv_index = *((unsigned int *)(&(data[4])) );
+  header->version = data[8];
 }
 
 unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *plaintext, int len, unsigned char *key, int mode, unsigned char iv, int iv_index)
@@ -242,9 +235,9 @@ unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *pl
     header.iv_index = iv_index;
   }
 
-  // reallocate to make space for header
-  // debug_print(1, "Reallocating memory for hill cipher header (%i more bytes needed)\n", HILL_HEADER_LEN);
-  // ciphertext = (unsigned char *) realloc(ciphertext, len + HILL_HEADER_LEN);
+  // allocate to make space for header and ciphertext result
+  debug_print(1, "Allocating memory for hill cipher header and ciphertext result (%i bytes + %i bytes)\n", HILL_HEADER_LEN, len);
+  ciphertext = (unsigned char *) calloc(1, len + HILL_HEADER_LEN);
 
   // copy header into the begining of the bytestream
   debug_print(2, "Copying header bytes to byte stream\n","");
@@ -271,22 +264,36 @@ unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *cip
 {
   int i;
 
+  // build dat fancy encryption header containing information like mode, iv or iv index, etc.
+  hillcipher_header header;
+  build_header_struct(&header, ciphertext);
+
   //Attempt to read header
-  if(ciphertext[0] != 'H' || ciphertext[1] != 'C')
+  if(memcmp("HC", header.magic, 2) != 0)
   {
     fprintf(stderr, "ERROR: Not an encrypted file! (Unable to find hill cipher header)\n","");
     exit(EXIT_FAILURE);
   }
+  else
+  {
+    debug_print(2, "Found encryption header in file.\n","");
+  }
 
-  printf("Detected Hill Cipher implementation version %d", ciphertext[HILL_HEADER_VERSION]);
+  printf("Detected Hill Cipher implementation version %d\n", header.version);
 
-  switch(ciphertext[HILL_HEADER_MODE])
+  // allocate to make space for header and ciphertext result
+  debug_print(1, "Allocating memory for hill cipher plaintext result (%i bytes)\n", len - HILL_HEADER_LEN);
+  plaintext = (unsigned char *) calloc(1, len - HILL_HEADER_LEN);
+
+
+  switch(header.flags & ~HILL_HEADER_IV_MASK) // mask out iv source flag to get mode
   {
     case HILL_MODE_ECB:
       printf("Detected ciphertext in ECB mode...\n");
-      for (i = 0; i < len; ++i)
+      for (i = 0; i < len - HILL_HEADER_LEN; ++i)
       {
-        plaintext[i] = matrix_mult_vector(dkey, ciphertext[i]);
+        plaintext[i] = matrix_mult_vector(dkey, ciphertext[i+HILL_HEADER_LEN]);
+        debug_print(2, "Decrypted character '%c' to '%c' (0x%.2X) at data index %i\n",ciphertext[i+HILL_HEADER_LEN],plaintext[i],plaintext[i], i+HILL_HEADER_LEN);
       }
       return plaintext;
       break;
