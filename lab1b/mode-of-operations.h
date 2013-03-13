@@ -26,6 +26,25 @@
 #define HILL_UNUSED 0x00
 
 /* encryption header definitions */
+/*
+ *  0                2        3        4                                8        9
+ *  +----------------+--------+--------+--------------------------------+--------+
+ *  | "HC" magic str | Flags  |   IV   |         IV Table Index         |  Ver.  |
+ *  |    2 bytes     | 1 byte | 1 byte |     4 bytes (unsigned int)     | 1 byte |
+ *  +----------------+--------+--------+--------------------------------+--------+
+ *
+ *  1. "HC" magic str identifies file as an encrypted file
+ *  2. Flags contains the encryption block mode and IV source:
+ *     - 1XXXXXX = IV index is specified and IV must be looked up in public table
+ *     - XXXXX00 = Block mode is ECB
+ *     - XXXXX01 = Block mode is CBC
+ *     - XXXXX10 = Block mode is CFB
+ *  3. IV is the IV value used in CBC or CFG but encrypted with Hill Cipher in ECB mode
+ *  4. IV Table Index is the location of the IV value in the generated nonce IV table.
+ *  5. Version specifies what implementation version this encrypted file is.
+ *
+ */
+
 #define HILL_HEADER_MODE_MASK 0x01
 #define HILL_HEADER_IV_MASK 0x80
 typedef struct hillcipher_header_tag

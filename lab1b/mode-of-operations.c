@@ -1,7 +1,7 @@
 // Justin Bull 500355958
 // Jonathan Kwan 500342079
 
-#define DEBUG 1
+#define DEBUG 0
 #define DEBUG_LEVEL 2
 
 #include <stdio.h>
@@ -352,13 +352,16 @@ unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *cip
 
       if((header.flags & HILL_HEADER_IV_MASK) == HILL_IV_TABLE)
       {
+        printf("Detected IV index. Looking up IV in nonce table...\n");
         iv = lookup_iv_in_table(header.iv_index);
+        printf("IV value is 0x%.2X\n", iv);
         debug_print(2, "IV source is in public nonce-generated IV table\n","");
         debug_print(2, "IV value is 0x%.2X at index %i\n", iv, header.iv_index);
       }
       else if((header.flags & HILL_HEADER_IV_MASK) == HILL_IV_ECB)
       {
         iv = matrix_mult_vector(dkey, header.iv);
+        printf("Detected HC-ECB encrypted IV. Decrypted to 0x%.2X\n", iv);
         debug_print(2, "IV source is an HC-ECB encrypted byte stored in header\n","");
         debug_print(2, "EC-ECB encrypted IV value is 0x%.2X in header decrypted to be 0x%.2X\n", header.iv, iv);
       }
