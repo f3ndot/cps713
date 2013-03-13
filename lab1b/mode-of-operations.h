@@ -45,7 +45,7 @@
  *
  */
 
-#define HILL_HEADER_MODE_MASK 0x01
+#define HILL_HEADER_MODE_MASK 0x03
 #define HILL_HEADER_IV_MASK 0x80
 typedef struct hillcipher_header_tag
 {

@@ -334,7 +334,7 @@ unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *cip
   plaintext = (unsigned char *) calloc(1, len - HILL_HEADER_LEN);
 
 
-  switch(header.flags & ~HILL_HEADER_IV_MASK) // mask out iv source flag to get mode
+  switch(header.flags & HILL_HEADER_MODE_MASK) // mask out iv flag
   {
     case HILL_MODE_ECB:
       printf("Detected ciphertext in ECB mode...\n");
