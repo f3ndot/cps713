@@ -20,7 +20,7 @@
 /* mode of operations in hill cipher */
 #define HILL_MODE_ECB 0x00
 #define HILL_MODE_CBC 0x01
-#define HILL_MODE_OFB 0x02
+#define HILL_MODE_CFB 0x02
 #define HILL_IV_ECB 0x00
 #define HILL_IV_TABLE 0x80
 #define HILL_UNUSED 0x00
@@ -31,7 +31,7 @@
 typedef struct hillcipher_header_tag
 {
   unsigned char magic[2];
-  unsigned char flags; // 0x80 = IV table, 0x00 = ECB mode, 0x01 = CBC mode, 0x02 = OFB mode
+  unsigned char flags; // 0x80 = IV table, 0x00 = ECB mode, 0x01 = CBC mode, 0x02 = CFB mode
   unsigned char iv;
   unsigned int iv_index;
   unsigned char version;

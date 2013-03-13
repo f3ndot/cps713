@@ -68,7 +68,7 @@ int main(int argc, char const *argv[])
   if(encipherment_mode == 1)
   {
 
-    printf("Available Modes of Operation:\n(1) ECB\t\t(2) CBC\t\t(3) OFB\n\nEnter choice: ");
+    printf("Available Modes of Operation:\n(1) ECB\t\t(2) CBC\t\t(3) CFB\n\nEnter choice: ");
     scanf("%d", &block_mode);
     block_mode -= 1;
 
@@ -281,9 +281,9 @@ unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *pl
       }
       return ciphertext;
       break;
-    case HILL_MODE_OFB:
-      debug_print(2, "Performing encryption of bytestream in OFB mode\n","");
-      printf("Detected ciphertext in OFB mode...\n");
+    case HILL_MODE_CFB:
+      debug_print(2, "Performing encryption of bytestream in CFB mode\n","");
+      printf("Detected ciphertext in CFB mode...\n");
       break;
     default:
       fprintf(stderr, "ERROR: Unknown hill cipher mode!\n","");
@@ -369,8 +369,8 @@ unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *cip
       }
       return plaintext;
       break;
-    case HILL_MODE_OFB:
-      printf("Detected ciphertext in OFB mode...\n");
+    case HILL_MODE_CFB:
+      printf("Detected ciphertext in CFB mode...\n");
       break;
     default:
       fprintf(stderr, "ERROR: Unknown hill cipher mode! (Read \"%c\" in mode field of hill cipher header)\n",ciphertext[2]);
