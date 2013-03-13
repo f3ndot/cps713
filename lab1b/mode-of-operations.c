@@ -209,6 +209,11 @@ void build_header_struct(hillcipher_header *header, unsigned char *data) {
   header->iv = data[3];
   header->iv_index = *((unsigned int *)(&(data[4])) );
   header->version = data[8];
+  debug_print(1,"Magic field   \"%c%c\"\n", header->magic[0], header->magic[1]);
+  debug_print(1,"Flags field    "BYTETOBINARYPATTERN"\n", BYTETOBINARY(header->flags));
+  debug_print(1,"IV field       0x%.2X\n", header->iv);
+  debug_print(1,"IV index field %d\n", header->iv_index);
+  debug_print(1,"version field  0x%.2X\n", header->version);
 }
 
 unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *plaintext, int len, unsigned char *key, int mode, unsigned char iv, int iv_index)
@@ -229,6 +234,12 @@ unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *pl
     header.flags |= HILL_IV_TABLE; // set the left-most flag bit to 1
     header.iv_index = iv_index;
   }
+  debug_print(1,"Header magic field   \"%c%c\"\n", header.magic[0], header.magic[1]);
+  debug_print(1,"Header flags field    "BYTETOBINARYPATTERN"\n", BYTETOBINARY(header.flags));
+  debug_print(1,"Header IV field       0x%.2X\n", header.iv);
+  debug_print(1,"Header IV index field %d\n", header.iv_index);
+  debug_print(1,"Header version field  0x%.2X\n", header.version);
+
 
   // allocate to make space for header and ciphertext result
   debug_print(1, "Allocating memory for hill cipher header and ciphertext result (%i bytes + %i bytes)\n", HILL_HEADER_LEN, len);
