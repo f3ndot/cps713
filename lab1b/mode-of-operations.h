@@ -50,6 +50,7 @@ void printhex(unsigned char *bytes, int len);
 
 FILE * generate_iv_table(char *filename);
 unsigned char consume_next_available_iv(FILE *table_fp, int *iv_index);
+unsigned char lookup_iv_in_table(int iv_index);
 
 /* debug and utility functions */
 #ifndef DEBUG

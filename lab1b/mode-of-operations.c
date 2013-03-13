@@ -332,6 +332,42 @@ unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *cip
       break;
     case HILL_MODE_CBC:
       printf("Detected ciphertext in CBC mode...\n");
+      debug_print(2, "Performing decryption of bytestream in CBC mode\n","");
+      unsigned char iv;
+
+      if((header.flags & HILL_HEADER_IV_MASK) == HILL_IV_TABLE)
+      {
+        iv = lookup_iv_in_table(header.iv_index);
+        debug_print(2, "IV source is in public nonce-generated IV table\n","");
+        debug_print(2, "IV value is 0x%.2X at index %i\n", iv, header.iv_index);
+      }
+      else if((header.flags & HILL_HEADER_IV_MASK) == HILL_IV_ECB)
+      {
+        iv = matrix_mult_vector(dkey, header.iv);
+        debug_print(2, "IV source is an HC-ECB encrypted byte stored in header\n","");
+        debug_print(2, "EC-ECB encrypted IV value is 0x%.2X in header decrypted to be 0x%.2X\n", header.iv, iv);
+      }
+      else
+      {
+        fprintf(stderr, "ERROR: Logic failure in IV source detection. Dying...!\n","");
+        exit(EXIT_FAILURE);
+      }
+
+      // main encryption routine for CBC mode with IV feedback
+      for (i = 0; i < len; ++i)
+      {
+        if(i == 0)
+        {
+          plaintext[i] = iv ^ matrix_mult_vector(dkey, ciphertext[i+HILL_HEADER_LEN]);
+          debug_print(2, "Decrypted character '%c' (0x%.2X) to '%c' (CBC'd with IV byte 0x%.2X)\n",ciphertext[i+HILL_HEADER_LEN],ciphertext[i+HILL_HEADER_LEN],plaintext[i], iv);
+        }
+        else
+        {
+          plaintext[i] = ciphertext[i+HILL_HEADER_LEN-1] ^ matrix_mult_vector(dkey, ciphertext[i+HILL_HEADER_LEN]);
+          debug_print(2, "Decrypted character '%c' (0x%.2X) to '%c' (CBC'd with prev ct byte 0x%.2X)\n",ciphertext[i+HILL_HEADER_LEN],ciphertext[i+HILL_HEADER_LEN],plaintext[i], ciphertext[i+HILL_HEADER_LEN-1]);
+        }
+      }
+      return plaintext;
       break;
     case HILL_MODE_OFB:
       printf("Detected ciphertext in OFB mode...\n");
@@ -373,6 +409,24 @@ unsigned char matrix_mult_vector(unsigned char *matrix, unsigned char vector)
   return result;
 }
 
+
+unsigned char lookup_iv_in_table(int iv_index)
+{
+  FILE *fp = fopen("ivtable.bin", "r+b");
+  unsigned char iv;
+  if(fp)
+  {
+    fseek(fp, IVTABLE_BITMAP_SIZE + iv_index, SEEK_SET);
+    iv = (unsigned char) fgetc(fp);
+    fclose(fp);
+    return iv;
+  }
+  else
+  {
+    fprintf(stderr, "ERROR: cannot open IV table file...\n");
+    exit(EXIT_SUCCESS);
+  }
+}
 
 unsigned char consume_next_available_iv(FILE *table_fp, int *iv_index)
 {
