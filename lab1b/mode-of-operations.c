@@ -52,8 +52,9 @@ int main(int argc, char const *argv[])
   int iv_source = -1;
   char output_file[1024]; // filename is max 1024 chars...
   char ivtable_file[] = "ivtable.bin";
-  char iv = HILL_UNUSED;
+  unsigned char iv = HILL_UNUSED;
   int iv_index = HILL_UNUSED;
+  char manual_iv[8+1];
 
   if(argc < 2)
   {
@@ -79,7 +80,10 @@ int main(int argc, char const *argv[])
       scanf("%d", &iv_source);
       if(iv_source == 1)
       {
-
+        printf("Enter in desired IV value in binary (eg 10101100)\n\nEnter IV: ");
+        scanf("%s", manual_iv);
+        iv = (unsigned char) strtol(manual_iv, NULL, 2);
+        debug_print(1, "Parsed manual IV input as 0x%2X\n", iv);
       }
       else if(iv_source == 2)
       {
@@ -257,7 +261,7 @@ unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *pl
       else if((header.flags & HILL_HEADER_IV_MASK) == HILL_IV_ECB)
       {
         debug_print(2, "IV source is an HC-ECB encrypted byte stored in header\n","");
-        debug_print(2, "IV value is 0x%.2X HC-ECB encrypted to be 0z%.2X in header\n", iv, header.iv);
+        debug_print(2, "IV value is 0x%.2X HC-ECB encrypted to be 0x%.2X in header\n", iv, header.iv);
       }
       else
       {
@@ -405,7 +409,7 @@ unsigned char matrix_mult_vector(unsigned char *matrix, unsigned char vector)
     debug_print(3, BYTETOBINARYPATTERN" * "BYTETOBINARYPATTERN" = %d\n", BYTETOBINARY(matrix[i]), BYTETOBINARY(vector), bit);
   }
 
-  debug_print(1, "Result: "BYTETOBINARYPATTERN"\n", BYTETOBINARY(result));
+  debug_print(3, "Result: "BYTETOBINARYPATTERN"\n", BYTETOBINARY(result));
   return result;
 }
 
