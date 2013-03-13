@@ -354,7 +354,7 @@ unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *cip
       }
 
       // main encryption routine for CBC mode with IV feedback
-      for (i = 0; i < len; ++i)
+      for (i = 0; i < len - HILL_HEADER_LEN; ++i)
       {
         if(i == 0)
         {
