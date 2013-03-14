@@ -160,7 +160,7 @@ int main(int argc, char const *argv[])
   }
   if(encipherment_mode == 2)
   {
-    dpt = hill_cipher_decrypt(dpt, pt, msglen, dkey); // mode and IV is detected in encryption header
+    dpt = hill_cipher_decrypt(dpt, pt, msglen, dkey, key); // mode and IV is detected in encryption header
     printf("Original Ciphertext:  "); printhex(pt, msglen); printf("\n");
     printf("Decrypted Plaintext:  "); printhex(dpt, msglen - HILL_HEADER_LEN); printf("\n");
     printf("Decrypted Plaintext:  \"");
@@ -340,7 +340,7 @@ unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *pl
 }
 
 
-unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *ciphertext, int len, unsigned char *dkey)
+unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *ciphertext, int len, unsigned char *dkey, unsigned char *key)
 {
   int i;
 
@@ -448,14 +448,14 @@ unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *cip
       {
         if(i == 0)
         {
-          plaintext[i] = ciphertext[i+HILL_HEADER_LEN] ^ matrix_mult_vector(dkey, iv);
+          plaintext[i] = ciphertext[i+HILL_HEADER_LEN] ^ matrix_mult_vector(key, iv);
           debug_print(2, "Decrypted character '%c' (0x%.2X) to '%c' (CFB'd with IV byte 0x%.2X)\n",ciphertext[i+HILL_HEADER_LEN],ciphertext[i+HILL_HEADER_LEN],plaintext[i], iv);
         }
         else
         {
           unsigned char shifted_prev_ct = (ciphertext[i+HILL_HEADER_LEN-1] << 1) | ((ciphertext[i+HILL_HEADER_LEN-1] & 0x80) >> 7);
           debug_print(2, "Shifted previous ciphertext from "BYTETOBINARYPATTERN" to "BYTETOBINARYPATTERN" (0x%.2X to 0x%.2X)\n",BYTETOBINARY(ciphertext[i+HILL_HEADER_LEN-1]),BYTETOBINARY(shifted_prev_ct),ciphertext[i+HILL_HEADER_LEN-1],shifted_prev_ct);
-          plaintext[i] = ciphertext[i+HILL_HEADER_LEN] ^ matrix_mult_vector(dkey, shifted_prev_ct);
+          plaintext[i] = ciphertext[i+HILL_HEADER_LEN] ^ matrix_mult_vector(key, shifted_prev_ct);
           debug_print(2, "Decrypted character '%c' to '%c' (0x%.2X) at index %i (CFB'd with shifted prev ct byte 0x%.2X)\n",ciphertext[i+HILL_HEADER_LEN],plaintext[i],plaintext[i], i+HILL_HEADER_LEN, shifted_prev_ct);
         }
       }

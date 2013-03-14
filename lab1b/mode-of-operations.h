@@ -62,7 +62,7 @@ void build_header_struct(hillcipher_header *header, unsigned char *data); // use
 
 /* Hill Cipher encryption and decryption functions */
 unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *plaintext, int len, unsigned char *key, int mode, unsigned char iv, int iv_index);
-unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *ciphertext, int len, unsigned char *dkey);
+unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *ciphertext, int len, unsigned char *dkey, unsigned char *key); // CFB uses original key
 unsigned char matrix_mult_vector(unsigned char *matrix, unsigned char vector);
 void save_bytes_to_file(char *filename, unsigned char *bytes, int len);
 void printhex(unsigned char *bytes, int len);
