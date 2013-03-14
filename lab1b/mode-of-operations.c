@@ -22,7 +22,7 @@ int main(int argc, char const *argv[])
 #endif
 
   /*
-   * Perform sanity check on the encryption and decryption functions.
+   * Define keys for the encryption and decryption functions.
    */
   unsigned char key[SANITY_KEYLEN_CHAR] =
   {
@@ -148,6 +148,7 @@ int main(int argc, char const *argv[])
   }
 
 
+  // Encryption mode
   if(encipherment_mode == 1)
   {
     printf("Original Plaintext:   \"");
@@ -164,6 +165,7 @@ int main(int argc, char const *argv[])
     free(ct);
     free(pt);
   }
+  // Decryption mode
   if(encipherment_mode == 2)
   {
     dpt = hill_cipher_decrypt(dpt, pt, msglen, dkey, key); // mode and IV is detected in encryption header
@@ -211,7 +213,7 @@ void build_header_struct(hillcipher_header *header, unsigned char *data) {
   header->magic[1] = data[1];
   header->flags = data[2];
   header->iv = data[3];
-  header->iv_index = *((unsigned int *)(&(data[4])) );
+  header->iv_index = *((unsigned int *)(&(data[4])) ); // a fancy C way to take 4 char bytes and return the equivalent unsigned int value
   header->version = data[8];
   debug_print(1,"Magic field   \"%c%c\"\n", header->magic[0], header->magic[1]);
   debug_print(1,"Flags field    "BYTETOBINARYPATTERN"\n", BYTETOBINARY(header->flags));
