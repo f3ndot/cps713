@@ -6,6 +6,8 @@ gcc mode-of-operations.c
 
 To enable DEBUG output (recommended to see the encryption/decryption process work during runtime), simply set ```#define DEBUG 0``` to ```#define DEBUG 1``` on line 4 of mode-of-operations.c
 
+NOTE: Lab was gcc-compiled on Mac OS X 10.8.2 but also confirmed to work on moon.scs.ryerson.ca linux servers.
+
 
 Lab Questions and Answers:
 ==========================

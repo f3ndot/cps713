@@ -15,7 +15,11 @@
 int main(int argc, char const *argv[])
 {
   int i = 0;
-  srandomdev(); // seeds random number generator from OS
+#ifdef __APPLE__
+  srandomdev(); // seeds random number generator from secure source
+#else
+  srandom(time(NULL)); // seeds random number generator
+#endif
 
   /*
    * Perform sanity check on the encryption and decryption functions.
