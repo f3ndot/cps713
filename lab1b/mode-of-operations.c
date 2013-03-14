@@ -1,7 +1,7 @@
 // Justin Bull 500355958
 // Jonathan Kwan 500342079
 
-#define DEBUG 0
+#define DEBUG 1
 #define DEBUG_LEVEL 2
 
 #include <stdio.h>
@@ -298,7 +298,39 @@ unsigned char * hill_cipher_encrypt(unsigned char *ciphertext, unsigned char *pl
       break;
     case HILL_MODE_CFB:
       debug_print(2, "Performing encryption of bytestream in CFB mode\n","");
-      printf("Detected ciphertext in CFB mode...\n");
+      if((header.flags & HILL_HEADER_IV_MASK) == HILL_IV_TABLE)
+      {
+        debug_print(2, "IV source is in public nonce-generated IV table\n","");
+        debug_print(2, "IV value is 0x%.2X at index %i\n", iv, header.iv_index);
+      }
+      else if((header.flags & HILL_HEADER_IV_MASK) == HILL_IV_ECB)
+      {
+        debug_print(2, "IV source is an HC-ECB encrypted byte stored in header\n","");
+        debug_print(2, "IV value is 0x%.2X HC-ECB encrypted to be 0x%.2X in header\n", iv, header.iv);
+      }
+      else
+      {
+        fprintf(stderr, "ERROR: Logic failure in IV source detection. Dying...!\n","");
+        exit(EXIT_FAILURE);
+      }
+
+      // main encryption routine for CFB mode with IV
+      for (i = 0; i < len; ++i)
+      {
+        if(i == 0)
+        {
+          ciphertext[i+HILL_HEADER_LEN] = plaintext[i] ^ matrix_mult_vector(key, iv);
+          debug_print(2, "Encrypted character '%c' to '%c' (0x%.2X) at index %i (CFB'd with IV byte 0x%.2X)\n",plaintext[i],ciphertext[i+HILL_HEADER_LEN],ciphertext[i+HILL_HEADER_LEN], i+HILL_HEADER_LEN, iv);
+        }
+        else
+        {
+          unsigned char shifted_prev_ct = (ciphertext[i+HILL_HEADER_LEN-1] << 1) | ((ciphertext[i+HILL_HEADER_LEN-1] & 0x80) >> 7);
+          debug_print(2, "Shifted previous ciphertext from "BYTETOBINARYPATTERN" to "BYTETOBINARYPATTERN" (0x%.2X to 0x%.2X)\n",BYTETOBINARY(ciphertext[i+HILL_HEADER_LEN-1]),BYTETOBINARY(shifted_prev_ct),ciphertext[i+HILL_HEADER_LEN-1],shifted_prev_ct);
+          ciphertext[i+HILL_HEADER_LEN] = plaintext[i] ^ matrix_mult_vector(key, shifted_prev_ct);
+          debug_print(2, "Encrypted character '%c' to '%c' (0x%.2X) at index %i (CFB'd with shifted prev ct byte 0x%.2X)\n",plaintext[i],ciphertext[i+HILL_HEADER_LEN],ciphertext[i+HILL_HEADER_LEN], i+HILL_HEADER_LEN, shifted_prev_ct);
+        }
+      }
+      return ciphertext;
       break;
     default:
       fprintf(stderr, "ERROR: Unknown hill cipher mode!\n","");
@@ -333,7 +365,7 @@ unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *cip
   debug_print(1, "Allocating memory for hill cipher plaintext result (%i bytes)\n", len - HILL_HEADER_LEN);
   plaintext = (unsigned char *) calloc(1, len - HILL_HEADER_LEN);
 
-
+  unsigned char iv = 0x00;
   switch(header.flags & HILL_HEADER_MODE_MASK) // mask out iv flag
   {
     case HILL_MODE_ECB:
@@ -348,7 +380,6 @@ unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *cip
     case HILL_MODE_CBC:
       printf("Detected ciphertext in CBC mode...\n");
       debug_print(2, "Performing decryption of bytestream in CBC mode\n","");
-      unsigned char iv;
 
       if((header.flags & HILL_HEADER_IV_MASK) == HILL_IV_TABLE)
       {
@@ -371,7 +402,7 @@ unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *cip
         exit(EXIT_FAILURE);
       }
 
-      // main encryption routine for CBC mode with IV feedback
+      // main decryption routine for CBC mode with IV feedback
       for (i = 0; i < len - HILL_HEADER_LEN; ++i)
       {
         if(i == 0)
@@ -389,6 +420,46 @@ unsigned char * hill_cipher_decrypt(unsigned char *plaintext, unsigned char *cip
       break;
     case HILL_MODE_CFB:
       printf("Detected ciphertext in CFB mode...\n");
+      debug_print(2, "Performing decryption of bytestream in CFB mode\n","");
+
+      if((header.flags & HILL_HEADER_IV_MASK) == HILL_IV_TABLE)
+      {
+        printf("Detected IV index. Looking up IV in nonce table...\n");
+        iv = lookup_iv_in_table(header.iv_index);
+        printf("IV value is 0x%.2X\n", iv);
+        debug_print(2, "IV source is in public nonce-generated IV table\n","");
+        debug_print(2, "IV value is 0x%.2X at index %i\n", iv, header.iv_index);
+      }
+      else if((header.flags & HILL_HEADER_IV_MASK) == HILL_IV_ECB)
+      {
+        iv = matrix_mult_vector(dkey, header.iv);
+        printf("Detected HC-ECB encrypted IV. Decrypted to 0x%.2X\n", iv);
+        debug_print(2, "IV source is an HC-ECB encrypted byte stored in header\n","");
+        debug_print(2, "EC-ECB encrypted IV value is 0x%.2X in header decrypted to be 0x%.2X\n", header.iv, iv);
+      }
+      else
+      {
+        fprintf(stderr, "ERROR: Logic failure in IV source detection. Dying...!\n","");
+        exit(EXIT_FAILURE);
+      }
+
+      // main decryption routine for CFB mode with IV
+      for (i = 0; i < len - HILL_HEADER_LEN; ++i)
+      {
+        if(i == 0)
+        {
+          plaintext[i] = ciphertext[i+HILL_HEADER_LEN] ^ matrix_mult_vector(dkey, iv);
+          debug_print(2, "Decrypted character '%c' (0x%.2X) to '%c' (CFB'd with IV byte 0x%.2X)\n",ciphertext[i+HILL_HEADER_LEN],ciphertext[i+HILL_HEADER_LEN],plaintext[i], iv);
+        }
+        else
+        {
+          unsigned char shifted_prev_ct = (ciphertext[i+HILL_HEADER_LEN-1] << 1) | ((ciphertext[i+HILL_HEADER_LEN-1] & 0x80) >> 7);
+          debug_print(2, "Shifted previous ciphertext from "BYTETOBINARYPATTERN" to "BYTETOBINARYPATTERN" (0x%.2X to 0x%.2X)\n",BYTETOBINARY(ciphertext[i+HILL_HEADER_LEN-1]),BYTETOBINARY(shifted_prev_ct),ciphertext[i+HILL_HEADER_LEN-1],shifted_prev_ct);
+          plaintext[i] = ciphertext[i+HILL_HEADER_LEN] ^ matrix_mult_vector(dkey, shifted_prev_ct);
+          debug_print(2, "Decrypted character '%c' to '%c' (0x%.2X) at index %i (CFB'd with shifted prev ct byte 0x%.2X)\n",ciphertext[i+HILL_HEADER_LEN],plaintext[i],plaintext[i], i+HILL_HEADER_LEN, shifted_prev_ct);
+        }
+      }
+      return plaintext;
       break;
     default:
       fprintf(stderr, "ERROR: Unknown hill cipher mode! (Read \"%c\" in mode field of hill cipher header)\n",ciphertext[2]);
