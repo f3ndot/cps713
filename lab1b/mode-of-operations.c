@@ -161,6 +161,8 @@ int main(int argc, char const *argv[])
     printf("Encrypted Ciphertext: "); printhex(ct, msglen + HILL_HEADER_LEN); printf("\n");
 
     save_bytes_to_file(output_file, ct, msglen + HILL_HEADER_LEN);
+    free(ct);
+    free(pt);
   }
   if(encipherment_mode == 2)
   {
@@ -175,12 +177,10 @@ int main(int argc, char const *argv[])
     printf("\"\n");
 
     save_bytes_to_file(output_file, dpt, msglen);
+    free(dpt);
+    free(pt);
   }
 
-
-  free(ct);
-  free(pt);
-  free(dpt);
   exit(EXIT_SUCCESS);
 }
 
