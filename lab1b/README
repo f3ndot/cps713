@@ -13,8 +13,8 @@ NOTE: Lab was gcc-compiled on Mac OS X 10.8.2 but also confirmed to work on moon
 
 Team Members:
 -------------
-Justin Bull 500355958
-Jonathan Kwan 500342079
+- Justin Bull 500355958
+- Jonathan Kwan 500342079
 
 
 Lab Questions, Answers, & Output:
@@ -39,6 +39,7 @@ NOTE: All ciphertext output contains a 9-byte header that describes the encrypte
 3. IV is the IV value used in CBC or CFG but encrypted with Hill Cipher in ECB mode
 4. IV Table Index is the location of the IV value in the generated nonce IV table.
 5. Version specifies what implementation version this encrypted file is.
+
 
 NOTE: ivtable.bin is provided as it was the public nonce table used to generate this report. Delete it to have the program regenerate a new one.
 

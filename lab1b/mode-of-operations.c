@@ -1,7 +1,7 @@
 // Justin Bull 500355958
 // Jonathan Kwan 500342079
 
-#define DEBUG 0
+#define DEBUG 1
 #define DEBUG_LEVEL 2
 
 #include <stdio.h>
