@@ -1,0 +1,11 @@
+			BLOCK FREQUENCY TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) Chi^2           = 2.062500
+		(b) # of substrings = 3
+		(c) block length    = 128
+		(d) Note: 116 bits were discarded.
+		---------------------------------------------
+SUCCESS		p_value = 0.559536
+
