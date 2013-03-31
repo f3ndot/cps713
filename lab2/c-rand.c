@@ -13,6 +13,18 @@
 #include <time.h>
 #include "lab2.h"
 
+static unsigned long int next = 1;
+int lab2_rand(void) // RAND_MAX assumed to be 32767
+{
+  next = next * 1103515245 + 12345;
+  return (unsigned int)(next/65536) % 32768;
+}
+unsigned int lab2_srand(unsigned int seed)
+{
+  next = seed;
+  return next;
+}
+
 int main(int argc, char *argv[])
 {
   int i = 0;
@@ -24,44 +36,17 @@ int main(int argc, char *argv[])
   }
   int maxSamples = atoi(argv[1]);
 
-  // check for seed
-  int initSeed = 0;
-  if(argc >= 3)
-  {
-    initSeed = atoi(argv[2]);
-    debug_print(1, "Initial seed of %i provided!\n", initSeed);
-  }
-  else
-  {
-    initSeed = 1000 + (time(NULL) % 9000);
-    debug_print(1, "Using time(NULL) to obtain 4-digit seed\n", "");
-  }
-
-  debug_print(1, "Going through %i samples of middle square\n", maxSamples);
+  int initSeed = lab2_srand(time(NULL));
+  debug_print(1, "Going through %i samples of C-based rand()\n", maxSamples);
   debug_print(1, "Using initial seed value: %i\n", initSeed);
 
-  int x = initSeed;
-  int newSeed;
   int *storageArray;
   storageArray = (int *) malloc(sizeof(int) * maxSamples);
   for( i = 0; i < maxSamples; i++)
   {
-    // take previous seed or initial number
-    newSeed = x * x;
-    debug_print(2, "%i * %i = %i\n", x, x, newSeed);
-
-    // select the middle four digits as output and next seed
-    int oldSeed = newSeed;
-    newSeed = (newSeed / 100) % 10000;
-    debug_print(2, "(%i / 100) %% 10000 = %i\n", oldSeed, newSeed);
-
-    // set the new seed as previous seed for next iteration
-    x = newSeed;
-
-    // store as output as well
-    storageArray[i] = x;
-
+    int x = lab2_rand();
     debug_print(1, "byte %i of %i: 0x%.2X (%i)\n", i+1, maxSamples, x, x);
+    storageArray[i] = x;
   }
   for( i = 0; i < maxSamples; i++)
   {
@@ -73,7 +58,6 @@ int main(int argc, char *argv[])
 }
 
 void print_help(char *prgnme) {
-  printf("Usage: %s bytelength [seed]\n\n", prgnme);
-  printf(" ** Omitting [seed] will cause the program to use time(NULL) ** \n");
+  printf("Usage: %s bytelength\n\n", prgnme);
   printf(" ** An ASCII binary stream will print to stdout for use with STS ** \n\n");
 }

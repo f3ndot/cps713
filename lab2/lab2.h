@@ -1,8 +1,8 @@
 // Justin Bull 500355958
 // Jonathan Kwan 500342079
 
-#ifndef MIDSQR_H
-#define MIDSQR_H
+#ifndef LAB2_H
+#define LAB2_H
 
 void print_help(char *prgnme);
 
@@ -30,4 +30,4 @@ void print_help(char *prgnme);
   (byte & 0x02 ? 1 : 0), \
   (byte & 0x01 ? 1 : 0)
 
-#endif /* MIDSQR_H */
+#endif /* LAB2_H */
