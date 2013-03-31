@@ -1,0 +1,195 @@
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 3.143380
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		  99 175 206 139  82   80 SUCCESS		p_value = 0.677892
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 10.658189
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		  86 182 179 167  89   78 SUCCESS		p_value = 0.058594
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 2.839782
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		  90 200 203 121  78   89 SUCCESS		p_value = 0.724670
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 2.530295
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		  97 185 199 132  89   79 SUCCESS		p_value = 0.771926
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 7.249114
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		  89 211 177 121  87   96 SUCCESS		p_value = 0.202763
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 4.573564
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		 105 185 190 124  79   98 SUCCESS		p_value = 0.470102
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 10.209195
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		 119 185 180 127  79   91 SUCCESS		p_value = 0.069520
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 1.601159
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		  94 191 181 144  84   87 SUCCESS		p_value = 0.901109
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 9.166881
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		  78 199 176 153  73  102 SUCCESS		p_value = 0.102590
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 6.020720
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		  72 206 197 139  76   91 SUCCESS		p_value = 0.304208
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 1.871118
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		  93 186 201 140  84   77 SUCCESS		p_value = 0.866675
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 10.557336
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		  84 179 211 129 102   76 SUCCESS		p_value = 0.060898
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 5.376628
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		  91 206 175 137  91   81 SUCCESS		p_value = 0.371664
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 2.079957
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		  94 184 184 137  85   97 SUCCESS		p_value = 0.837975
+
+			  LONGEST RUNS OF ONES TEST
+		---------------------------------------------
+		COMPUTATIONAL INFORMATION:
+		---------------------------------------------
+		(a) N (# of substrings)  = 781
+		(b) M (Substring Length) = 128
+		(c) Chi^2                = 4.785549
+		---------------------------------------------
+		      F R E Q U E N C Y
+		---------------------------------------------
+		<=4  5  6  7  8  >=9 P-value  Assignment
+		 100 168 190 150  83   90 SUCCESS		p_value = 0.442609
+
