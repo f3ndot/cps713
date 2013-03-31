@@ -13,6 +13,16 @@ gcc c-rand-keystroke.c -o c-rand-keystroke
 
 NOTE: I've turned on DEBUG in the source code (so you can see logic). If you want to pipe stdout (eg ./c-rand 10 > randomasciibinary.test) for use with STS, you'll need to set ```#define DEBUG 0``` in each .c file!!!
 
+NOTE: The 3 *.data files contain the random bits (800 bits) used during STS testing for observations
+
+
+Team Members:
+-------------
+
+Justin Bull, 500355958
+Jonathan Kwan, 500342079
+
+
 
 Usage defined here:
 -------------------
