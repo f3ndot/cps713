@@ -86,6 +86,10 @@ Middle Square Generator
 00100111110101101010101110010010010111101011100110110110110101101100111001001110
 
 
+### Observations From STS Test Results: ###
+KWAN TODO
+
+
 
 C-Style rand() Generator
 ------------------------
@@ -104,6 +108,10 @@ C-Style rand() Generator
 /Users/justinbull/Code/cps713/lab2/c-rand.c:48:main(): [DEBUG 1] byte 9 of 10: 0x7D5B (32091)
 /Users/justinbull/Code/cps713/lab2/c-rand.c:48:main(): [DEBUG 1] byte 10 of 10: 0x1FB1 (8113)
 01100011001100101010001100001101001111101100111010001000101010100101101110110001
+
+
+### Observations From STS Test Results: ###
+KWAN TODO
 
 
 
@@ -149,4 +157,8 @@ y
 /Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 8 of 10: 0x3B84 (15236)
 /Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 9 of 10: 0x6E98 (28312)
 /Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 10 of 10: 0x4447 (17479)
-10100100010101010001100110000010010001101000110100111000100001001001100001000111%
+10100100010101010001100110000010010001101000110100111000100001001001100001000111
+
+
+### Observations From STS Test Results: ###
+KWAN TODO
