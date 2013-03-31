@@ -87,7 +87,9 @@ Middle Square Generator
 
 
 ### Observations From STS Test Results: ###
-KWAN TODO
+The middle square generator fails all 15 tests done by STS and is by far the weakest PRNG algorithm of the three.
+It recieved a p value of 0 for all tests due to some failing wthe frequency test. The failure of the tests is 
+due to the short period of the algorithm, removing most elements of randomness from the sqeuence of numbers generated.
 
 
 
@@ -111,8 +113,8 @@ C-Style rand() Generator
 
 
 ### Observations From STS Test Results: ###
-KWAN TODO
-
+The C rand() PRNG is the middle child of the 3, passing 10 of 15 tests in the STS.
+Due to the use of the time(NULL) function as the seed,this seed generator is a poor source of entropy and very predictable since it only givens the time in seconds since Jan .1st. 1970 which is easily determinable.  As a result of the seed, the algorithm makes certain subpatterns of <n bits occur more frequently then others.
 
 
 C-Style rand() Generator with Keystroke Timing & Value Seed
@@ -161,4 +163,4 @@ y
 
 
 ### Observations From STS Test Results: ###
-KWAN TODO
+This algorithm is the strongest of the 3, passing 3 more tests  to pass 13 of the 15 STS tests and covering for some of the downfalls of the previous. By using keystoke timing and values as a seed it introduced a highly unpredictable seed using a high source of entropy, this also allowed subpatterns of <n bits now have an equal chance of occuring equally.
