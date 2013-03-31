@@ -1,0 +1,142 @@
+CPS713 Lab 2
+============
+
+Hello Professor and TAs,
+
+You can compile the source code by typing the following:
+
+```
+gcc middle-square.c -o middle-square
+gcc c-rand.c -o c-rand
+gcc c-rand-keystroke.c -o c-rand-keystroke
+```
+
+NOTE: I've turned on DEBUG in the source code (so you can see logic). If you want to pipe stdout (eg ./c-rand 10 > randomasciibinary.test) for use with STS, you'll need to set ```#define DEBUG 0``` in each .c file!!!
+
+
+Usage defined here:
+-------------------
+
+➜  lab2 git:(master) ✗ ./middle-square
+Usage: ./middle-square bytelength [seed]
+
+ ** Omitting [seed] will cause the program to use time(NULL) **
+ ** An ASCII binary stream will print to stdout for use with STS **
+
+➜  lab2 git:(master) ✗ ./c-rand
+Usage: ./c-rand bytelength
+
+ ** An ASCII binary stream will print to stdout for use with STS **
+
+➜  lab2 git:(master) ✗ ./c-rand-keystroke
+Usage: ./c-rand-keystroke bytelength [keystrokes]
+
+ ** An ASCII binary stream will print to stdout for use with STS **
+ ** If [keystrokes] is empty, it'll default to 10 chars **
+
+
+
+Middle Square Generator
+-----------------------
+
+➜  lab2 git:(master) ✗ ./middle-square 10
+/Users/justinbull/Code/cps713/lab2/middle-square.c:37:main(): [DEBUG 1] Using time(NULL) to obtain 4-digit seed
+/Users/justinbull/Code/cps713/lab2/middle-square.c:40:main(): [DEBUG 1] Going through 10 samples of middle square
+/Users/justinbull/Code/cps713/lab2/middle-square.c:41:main(): [DEBUG 1] Using initial seed value: 3227
+/Users/justinbull/Code/cps713/lab2/middle-square.c:51:main(): [DEBUG 2] 3227 * 3227 = 10413529
+/Users/justinbull/Code/cps713/lab2/middle-square.c:56:main(): [DEBUG 2] (10413529 / 100) % 10000 = 4135
+/Users/justinbull/Code/cps713/lab2/middle-square.c:64:main(): [DEBUG 1] byte 1 of 10: 0x1027 (4135)
+/Users/justinbull/Code/cps713/lab2/middle-square.c:51:main(): [DEBUG 2] 4135 * 4135 = 17098225
+/Users/justinbull/Code/cps713/lab2/middle-square.c:56:main(): [DEBUG 2] (17098225 / 100) % 10000 = 982
+/Users/justinbull/Code/cps713/lab2/middle-square.c:64:main(): [DEBUG 1] byte 2 of 10: 0x3D6 (982)
+/Users/justinbull/Code/cps713/lab2/middle-square.c:51:main(): [DEBUG 2] 982 * 982 = 964324
+/Users/justinbull/Code/cps713/lab2/middle-square.c:56:main(): [DEBUG 2] (964324 / 100) % 10000 = 9643
+/Users/justinbull/Code/cps713/lab2/middle-square.c:64:main(): [DEBUG 1] byte 3 of 10: 0x25AB (9643)
+/Users/justinbull/Code/cps713/lab2/middle-square.c:51:main(): [DEBUG 2] 9643 * 9643 = 92987449
+/Users/justinbull/Code/cps713/lab2/middle-square.c:56:main(): [DEBUG 2] (92987449 / 100) % 10000 = 9874
+/Users/justinbull/Code/cps713/lab2/middle-square.c:64:main(): [DEBUG 1] byte 4 of 10: 0x2692 (9874)
+/Users/justinbull/Code/cps713/lab2/middle-square.c:51:main(): [DEBUG 2] 9874 * 9874 = 97495876
+/Users/justinbull/Code/cps713/lab2/middle-square.c:56:main(): [DEBUG 2] (97495876 / 100) % 10000 = 4958
+/Users/justinbull/Code/cps713/lab2/middle-square.c:64:main(): [DEBUG 1] byte 5 of 10: 0x135E (4958)
+/Users/justinbull/Code/cps713/lab2/middle-square.c:51:main(): [DEBUG 2] 4958 * 4958 = 24581764
+/Users/justinbull/Code/cps713/lab2/middle-square.c:56:main(): [DEBUG 2] (24581764 / 100) % 10000 = 5817
+/Users/justinbull/Code/cps713/lab2/middle-square.c:64:main(): [DEBUG 1] byte 6 of 10: 0x16B9 (5817)
+/Users/justinbull/Code/cps713/lab2/middle-square.c:51:main(): [DEBUG 2] 5817 * 5817 = 33837489
+/Users/justinbull/Code/cps713/lab2/middle-square.c:56:main(): [DEBUG 2] (33837489 / 100) % 10000 = 8374
+/Users/justinbull/Code/cps713/lab2/middle-square.c:64:main(): [DEBUG 1] byte 7 of 10: 0x20B6 (8374)
+/Users/justinbull/Code/cps713/lab2/middle-square.c:51:main(): [DEBUG 2] 8374 * 8374 = 70123876
+/Users/justinbull/Code/cps713/lab2/middle-square.c:56:main(): [DEBUG 2] (70123876 / 100) % 10000 = 1238
+/Users/justinbull/Code/cps713/lab2/middle-square.c:64:main(): [DEBUG 1] byte 8 of 10: 0x4D6 (1238)
+/Users/justinbull/Code/cps713/lab2/middle-square.c:51:main(): [DEBUG 2] 1238 * 1238 = 1532644
+/Users/justinbull/Code/cps713/lab2/middle-square.c:56:main(): [DEBUG 2] (1532644 / 100) % 10000 = 5326
+/Users/justinbull/Code/cps713/lab2/middle-square.c:64:main(): [DEBUG 1] byte 9 of 10: 0x14CE (5326)
+/Users/justinbull/Code/cps713/lab2/middle-square.c:51:main(): [DEBUG 2] 5326 * 5326 = 28366276
+/Users/justinbull/Code/cps713/lab2/middle-square.c:56:main(): [DEBUG 2] (28366276 / 100) % 10000 = 3662
+/Users/justinbull/Code/cps713/lab2/middle-square.c:64:main(): [DEBUG 1] byte 10 of 10: 0xE4E (3662)
+00100111110101101010101110010010010111101011100110110110110101101100111001001110
+
+
+
+C-Style rand() Generator
+------------------------
+
+➜  lab2 git:(master) ✗ ./c-rand 10
+/Users/justinbull/Code/cps713/lab2/c-rand.c:40:main(): [DEBUG 1] Going through 10 samples of C-based rand()
+/Users/justinbull/Code/cps713/lab2/c-rand.c:41:main(): [DEBUG 1] Using initial seed value: 1364753182
+/Users/justinbull/Code/cps713/lab2/c-rand.c:48:main(): [DEBUG 1] byte 1 of 10: 0x6F63 (28515)
+/Users/justinbull/Code/cps713/lab2/c-rand.c:48:main(): [DEBUG 1] byte 2 of 10: 0x1032 (4146)
+/Users/justinbull/Code/cps713/lab2/c-rand.c:48:main(): [DEBUG 1] byte 3 of 10: 0x42A3 (17059)
+/Users/justinbull/Code/cps713/lab2/c-rand.c:48:main(): [DEBUG 1] byte 4 of 10: 0x690D (26893)
+/Users/justinbull/Code/cps713/lab2/c-rand.c:48:main(): [DEBUG 1] byte 5 of 10: 0x4A3E (19006)
+/Users/justinbull/Code/cps713/lab2/c-rand.c:48:main(): [DEBUG 1] byte 6 of 10: 0x7ACE (31438)
+/Users/justinbull/Code/cps713/lab2/c-rand.c:48:main(): [DEBUG 1] byte 7 of 10: 0x2C88 (11400)
+/Users/justinbull/Code/cps713/lab2/c-rand.c:48:main(): [DEBUG 1] byte 8 of 10: 0x67AA (26538)
+/Users/justinbull/Code/cps713/lab2/c-rand.c:48:main(): [DEBUG 1] byte 9 of 10: 0x7D5B (32091)
+/Users/justinbull/Code/cps713/lab2/c-rand.c:48:main(): [DEBUG 1] byte 10 of 10: 0x1FB1 (8113)
+01100011001100101010001100001101001111101100111010001000101010100101101110110001
+
+
+
+C-Style rand() Generator with Keystroke Timing & Value Seed
+-----------------------------------------------------------
+
+➜  lab2 git:(master) ✗ ./c-rand-keystroke 10
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:51:main(): [DEBUG 2] UINT_MAX is 4294967295
+a
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:57:main(): [DEBUG 1] Got char 97 at usec 670381
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:59:main(): [DEBUG 1] Seed currently 65026957 at round 1/10
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:57:main(): [DEBUG 1] Got char 10 at usec 670405
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:59:main(): [DEBUG 1] Seed currently 656674000 at round 2/10
+B
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:57:main(): [DEBUG 1] Got char 66 at usec 606820
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:59:main(): [DEBUG 1] Seed currently 430852722 at round 3/10
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:57:main(): [DEBUG 1] Got char 10 at usec 606842
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:59:main(): [DEBUG 1] Seed currently 8802385 at round 4/10
+y
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:57:main(): [DEBUG 1] Got char 121 at usec 790828
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:59:main(): [DEBUG 1] Seed currently 1096348693 at round 5/10
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:57:main(): [DEBUG 1] Got char 10 at usec 790861
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:59:main(): [DEBUG 1] Seed currently 2370893170 at round 6/10
+3
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:57:main(): [DEBUG 1] Got char 51 at usec 143060
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:59:main(): [DEBUG 1] Seed currently 662815278 at round 7/10
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:57:main(): [DEBUG 1] Got char 10 at usec 143089
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:59:main(): [DEBUG 1] Seed currently 2334605495 at round 8/10
+*
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:57:main(): [DEBUG 1] Got char 42 at usec 662977
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:59:main(): [DEBUG 1] Seed currently 3580974450 at round 9/10
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:57:main(): [DEBUG 1] Got char 10 at usec 662995
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:59:main(): [DEBUG 1] Seed currently 1456526930 at round 10/10
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:62:main(): [DEBUG 1] Going through 10 samples of C-based rand()
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:63:main(): [DEBUG 1] Using initial seed value: 1456526930
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 1 of 10: 0x2DA4 (11684)
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 2 of 10: 0x5455 (21589)
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 3 of 10: 0xC19 (3097)
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 4 of 10: 0x7682 (30338)
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 5 of 10: 0x946 (2374)
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 6 of 10: 0x708D (28813)
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 7 of 10: 0x2B38 (11064)
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 8 of 10: 0x3B84 (15236)
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 9 of 10: 0x6E98 (28312)
+/Users/justinbull/Code/cps713/lab2/c-rand-keystroke.c:71:main(): [DEBUG 1] byte 10 of 10: 0x4447 (17479)
+10100100010101010001100110000010010001101000110100111000100001001001100001000111%

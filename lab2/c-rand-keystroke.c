@@ -82,6 +82,6 @@ int main(int argc, char *argv[])
 
 void print_help(char *prgnme) {
   printf("Usage: %s bytelength [keystrokes]\n\n", prgnme);
-  printf(" ** An ASCII binary stream will print to stdout for use with STS ** \n\n");
+  printf(" ** An ASCII binary stream will print to stdout for use with STS ** \n");
   printf(" ** If [keystrokes] is empty, it'll default to 10 chars ** \n\n");
 }
